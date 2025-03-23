@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import Registration from './pages/Registration';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   const userName = 'Jane Doe'; // Placeholder; fetch from token later
@@ -17,8 +18,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Login />} />
                <Route path="/register" element={<Registration />} />
-              {/*<Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              {/*<Route path="/inventory" element={<Inventory />} />
               <Route path="/add-item" element={<AddItem />} />
               <Route path="/edit-item/:id" element={<EditItem />} />
               <Route path="/reports" element={<Reports />} /> */}
