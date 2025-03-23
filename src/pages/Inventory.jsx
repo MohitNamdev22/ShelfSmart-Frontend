@@ -1,11 +1,210 @@
 // Inventory.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { FiSearch, FiCalendar, FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
 
-function Inventory() {
+// Modal Component (Moved outside to prevent recreation)
+const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFormChange, handleFormSubmit, isSubmitting }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
+
+      {/* Modal Content */}
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-lg z-50">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          {isEdit ? 'Edit Inventory Item' : 'Add Inventory Item'}
+        </h2>
+        <p className="text-gray-500 mb-6">
+          Fill in the information below to {isEdit ? 'update the' : 'add a new'} item to your inventory
+        </p>
+
+        <form onSubmit={(e) => handleFormSubmit(e, isEdit)}>
+          {/* Item Name */}
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-1">
+              Item Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleFormChange}
+              placeholder="Enter item name"
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+              required
+            />
+          </div>
+
+          {/* Quantity and Threshold */}
+          <div className="flex space-x-4 mb-4">
+            <div className="flex-1">
+              <label className="block text-gray-700 mb-1">
+                Quantity <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="quantity"
+                value={formData.quantity}
+                onChange={handleFormChange}
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                min="0"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 mb-1">
+                Threshold <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="threshold"
+                value={formData.threshold}
+                onChange={handleFormChange}
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* Expiry Date */}
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-1">
+              Expiry Date <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                name="expiryDate"
+                value={formData.expiryDate}
+                onChange={handleFormChange}
+                placeholder="yyyy / mm / dd"
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Category */}
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-1">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="category"
+              value={formData.category}
+              onChange={handleFormChange}
+              placeholder="Enter category"
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+              required
+            />
+          </div>
+
+          {/* Supplier */}
+          <div className="mb-6">
+            <label className="block text-gray-700 mb-1">
+              Supplier <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="supplier"
+              value={formData.supplier}
+              onChange={handleFormChange}
+              placeholder="Enter supplier name"
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+              required
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex space-x-4">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center"
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {isEdit ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              isEdit ? 'Update Item' : 'Save Item'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+// Delete Confirmation Modal (Moved outside to prevent recreation)
+const DeleteModal = React.memo(({ isOpen, onClose, onConfirm, itemName, isDeleting }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
+
+      {/* Modal Content */}
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md z-50">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Confirm Deletion</h2>
+        <p className="text-gray-500 mb-6">
+          Are you sure you want to delete <span className="font-semibold">{itemName}</span>? This action cannot be undone.
+        </p>
+        <div className="flex space-x-4">
+        <button
+          onClick={onConfirm}
+          disabled={isDeleting}
+          className="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 flex items-center justify-center"
+        >
+          {isDeleting ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Deleting...
+            </>
+          ) : (
+            'Delete'
+          )}
+        </button>
+        <button
+          onClick={onClose}
+          disabled={isDeleting}
+          className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+      </div>
+    </div>
+  );
+});
+
+const Inventory = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState({ name: 'Loading...', role: 'USER' });
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -13,13 +212,32 @@ function Inventory() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const itemsPerPage = 8;
+  
+
+  // State for Add/Edit form
+  const [formData, setFormData] = useState({
+    name: '',
+    quantity: 0,
+    threshold: 0,
+    expiryDate: '',
+    category: '',
+    supplier: '',
+  });
 
   useEffect(() => {
     const fetchInventory = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
+        toast.error('Not authenticated');
         setError('Not authenticated');
+        navigate('/login');
         return;
       }
 
@@ -32,7 +250,7 @@ function Inventory() {
         const params = {};
         if (searchQuery) params.name = searchQuery;
         if (categoryFilter && categoryFilter !== 'All Category') params.category = categoryFilter;
-        
+
         const response = await axios.get('http://localhost:8080/inventory/search', {
           headers: { Authorization: `Bearer ${token}` },
           params,
@@ -40,43 +258,165 @@ function Inventory() {
         setInventoryItems(response.data);
       } catch (err) {
         setError('Failed to load inventory');
+        toast.error('Failed to load inventory');
         console.error(err);
       }
     };
     fetchInventory();
   }, [searchQuery, categoryFilter]);
 
-  const handleSearch = (e) => setSearchQuery(e.target.value);
-  const handleCategoryChange = (e) => setCategoryFilter(e.target.value);
+  const handleSearch = useCallback((e) => setSearchQuery(e.target.value), []);
+  const handleCategoryChange = useCallback((e) => setCategoryFilter(e.target.value), []);
 
-  const handleEdit = (id) => navigate(`/edit-item/${id}`);
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:8080/inventory/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setInventoryItems(inventoryItems.filter((item) => item.id !== id));
-      } catch (err) {
-        setError('Failed to delete item');
-      }
+  const handleAddItem = useCallback(() => {
+    setFormData({
+      name: '',
+      quantity: 0,
+      threshold: 0,
+      expiryDate: '',
+      category: '',
+      supplier: '',
+    });
+    setIsAddModalOpen(true);
+  }, []);
+
+  const handleEdit = useCallback((item) => {
+    setSelectedItem(item);
+    setFormData({
+      name: item.name,
+      quantity: item.quantity,
+      threshold: item.threshold || 0,
+      expiryDate: item.expiryDate,
+      category: item.category,
+      supplier: item.supplierInfo,
+    });
+    setIsEditModalOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((item) => {
+    setSelectedItem(item);
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!selectedItem) return;
+    setIsDeleting(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:8080/inventory/${selectedItem.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setInventoryItems(inventoryItems.filter((item) => item.id !== selectedItem.id));
+      setIsDeleteModalOpen(false);
+      setSelectedItem(null);
+      toast.success('Item deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete item');
+    } finally {
+      setIsDeleting(false);
     }
-  };
-  const handleAddItem = () => navigate('/add-item');
+  }, [selectedItem, inventoryItems]);
 
-  // Pagination (client-side for now)
+  const handleFormChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleFormSubmit = useCallback(
+    async (e, isEdit = false) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Not authenticated');
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        if (isEdit) {
+          // Update item
+          await axios.put(
+            `http://localhost:8080/inventory/${selectedItem.id}`,
+            {
+              name: formData.name,
+              quantity: parseInt(formData.quantity),
+              threshold: parseInt(formData.threshold),
+              expiryDate: formData.expiryDate,
+              category: formData.category,
+              supplierInfo: formData.supplier,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setInventoryItems(
+            inventoryItems.map((item) =>
+              item.id === selectedItem.id
+                ? {
+                    ...item,
+                    name: formData.name,
+                    quantity: parseInt(formData.quantity),
+                    threshold: parseInt(formData.threshold),
+                    expiryDate: formData.expiryDate,
+                    category: formData.category,
+                    supplierInfo: formData.supplier,
+                  }
+                : item
+            )
+          );
+          toast.success('Item updated successfully');
+        } else {
+          // Add new item
+          const response = await axios.post(
+            'http://localhost:8080/inventory',
+            {
+              name: formData.name,
+              quantity: parseInt(formData.quantity),
+              threshold: parseInt(formData.threshold),
+              expiryDate: formData.expiryDate,
+              category: formData.category,
+              supplierInfo: formData.supplier,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setInventoryItems([...inventoryItems, response.data]);
+          toast.success('Item added successfully');
+        }
+        setIsAddModalOpen(false);
+        setIsEditModalOpen(false);
+      } catch (err) {
+        toast.error(isEdit ? 'Failed to update item' : 'Failed to add item');
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, selectedItem, inventoryItems]
+  );
+
+  // Pagination
   const totalItems = inventoryItems.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentItems = inventoryItems.slice(startIndex, startIndex + itemsPerPage);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
+  }, [totalPages]);
 
   return (
     <Layout userName={user.name} userRole={user.role}>
+        <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
@@ -111,7 +451,6 @@ function Inventory() {
               className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
             >
               <option>All Category</option>
-              {/* Dynamically fetch categories if backend supports it */}
               <option>Grains</option>
               <option>Pasta</option>
               <option>Canned Goods</option>
@@ -120,7 +459,12 @@ function Inventory() {
               <option>Sweeteners</option>
               <option>Baking</option>
             </select>
-            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
             </svg>
           </div>
@@ -155,7 +499,9 @@ function Inventory() {
             <tbody>
               {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-4 text-center text-gray-500">No items found</td>
+                  <td colSpan="6" className="p-4 text-center text-gray-500">
+                    No items found
+                  </td>
                 </tr>
               ) : (
                 currentItems.map((item) => (
@@ -167,10 +513,16 @@ function Inventory() {
                     <td className="p-4 text-gray-800">{item.supplierInfo}</td>
                     {user.role === 'ADMIN' && (
                       <td className="p-4 flex space-x-2">
-                        <button onClick={() => handleEdit(item.id)} className="text-blue-600 hover:text-blue-800">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           <FiEdit />
                         </button>
-                        <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800">
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="text-red-600 hover:text-red-800"
+                        >
                           <FiTrash2 />
                         </button>
                       </td>
@@ -185,7 +537,8 @@ function Inventory() {
         {/* Pagination Section */}
         <div className="flex justify-between items-center mt-6">
           <p className="text-gray-600">
-            Showing {startIndex + 1} to {Math.min(startIndex + currentItems.length, totalItems)} of {totalItems} entries
+            Showing {startIndex + 1} to {Math.min(startIndex + currentItems.length, totalItems)} of{' '}
+            {totalItems} entries
           </p>
           <div className="flex space-x-2">
             <button
@@ -199,7 +552,9 @@ function Inventory() {
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-4 py-2 border rounded-lg ${currentPage === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`px-4 py-2 border rounded-lg ${
+                  currentPage === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
               >
                 {page}
               </button>
@@ -213,6 +568,33 @@ function Inventory() {
             </button>
           </div>
         </div>
+
+        {/* Modals */}
+        <InventoryModal
+  isOpen={isAddModalOpen}
+  onClose={() => setIsAddModalOpen(false)}
+  isEdit={false}
+  formData={formData}
+  handleFormChange={handleFormChange}
+  handleFormSubmit={handleFormSubmit}
+  isSubmitting={isSubmitting}
+/>
+<InventoryModal
+  isOpen={isEditModalOpen}
+  onClose={() => setIsEditModalOpen(false)}
+  isEdit={true}
+  formData={formData}
+  handleFormChange={handleFormChange}
+  handleFormSubmit={handleFormSubmit}
+  isSubmitting={isSubmitting}
+/>
+<DeleteModal
+  isOpen={isDeleteModalOpen}
+  onClose={() => setIsDeleteModalOpen(false)}
+  onConfirm={confirmDelete}
+  itemName={selectedItem?.name || ''}
+  isDeleting={isDeleting}
+/>
       </div>
     </Layout>
   );

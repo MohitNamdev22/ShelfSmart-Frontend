@@ -4,10 +4,9 @@ import Login from './pages/Login';
 import Registration from './pages/Registration';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
+import Reports from './pages/Report';
 
 function App() {
-  const userName = 'Jane Doe'; // Placeholder; fetch from token later
-  const userRole = 'ADMIN'; // Placeholder; fetch from token later
 
   return (
     <Router>
@@ -19,6 +18,7 @@ function App() {
                <Route path="/register" element={<Registration />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/inventory" element={<Inventory />} />
+              <Route path="/reports" element={<Reports />} />
               {/*<Route path="/add-item" element={<AddItem />} />
               <Route path="/edit-item/:id" element={<EditItem />} />
               <Route path="/reports" element={<Reports />} /> */}

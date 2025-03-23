@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { FiPackage, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 function Dashboard() {
@@ -25,7 +27,6 @@ function Dashboard() {
       }
 
       try {
-        // Get user data from localStorage instead of placeholder
         const userData = localStorage.getItem('userData');
         if (userData) {
           setUser(JSON.parse(userData));
@@ -42,6 +43,7 @@ function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setLowStockItems(lowStockResponse.data.map((item) => ({
+            id: item.id,
           name: item.name,
           quantity: `${item.quantity} units`,
           status: 'Low Stock',
@@ -60,19 +62,36 @@ function Dashboard() {
         setStats((prev) => ({ ...prev, expiringSoon: expiryResponse.data.length }));
       } catch (err) {
         setError('Failed to load dashboard data');
-        console.error(err);
+  toast.error('Failed to load dashboard data');
       }
     };
     fetchData();
   }, []);
 
   const handleRestock = async (itemName) => {
-    // Placeholder: Increase quantity (requires item ID or a new API)
-    alert(`Restocking ${itemName} - Implement PUT /inventory/{id} logic here`);
+    try {
+      const token = localStorage.getItem('token');
+      // Find item by name (assumes lowStockItems has id; adjust if needed)
+      const item = lowStockItems.find(i => i.name === itemName);
+      if (!item.id) throw new Error('Item ID not available');
+      
+      const updatedItem = { ...item, quantity: parseInt(item.quantity) + 10 }; // Example: Add 10 units
+      await axios.put(`http://localhost:8080/inventory/${item.id}`, updatedItem, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLowStockItems(lowStockItems.map(i => 
+        i.name === itemName ? { ...i, quantity: `${updatedItem.quantity} units` } : i
+      ));
+      setStats(prev => ({ ...prev, lowStockItems: lowStockItems.length }));
+    } catch (err) {
+      setError('Failed to restock item');
+      console.error(err);
+    }
   };
 
   return (
     <Layout>
+        <ToastContainer position="top-right" autoClose={3000} />;
     <div className="p-6 max-w-7xl mx-auto">
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 mb-8 text-white">
         <h2 className="text-3xl font-bold">
