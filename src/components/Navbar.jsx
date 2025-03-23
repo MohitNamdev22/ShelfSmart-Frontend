@@ -41,12 +41,22 @@ function Navbar() {
     }
   }, [userData]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userData');
-    setUserData(null);
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:8080/user/logout', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error('Logout failed:', err);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userData');
+      setUserData(null);
+      navigate('/');
+    }
   };
+  
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 h-[70px]">
