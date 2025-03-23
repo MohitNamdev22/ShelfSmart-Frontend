@@ -1,156 +1,190 @@
 // Dashboard.jsx
-import React from 'react';
-import Layout from '../components/Layout'; // Import the new Layout component
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Layout from '../components/Layout';
+import { FiPackage, FiAlertCircle, FiClock } from 'react-icons/fi';
+
 
 function Dashboard() {
-  // Hardcoded data for demonstration (replace with API calls in a real app)
-  const user = { name: 'John Doe', role: 'ADMIN' }; // Example user data
-  const stats = {
-    totalItems: 2459,
-    lowStockItems: 45,
-    expiringSoon: 28,
+    const [user, setUser] = useState(() => {
+        const userData = localStorage.getItem('userData');
+        return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };
+      });
+      const [stats, setStats] = useState({ totalItems: 0, lowStockItems: 0, expiringSoon: 0 });
+      const [lowStockItems, setLowStockItems] = useState([]);
+      const [expiringItems, setExpiringItems] = useState([]);
+      const [error, setError] = useState('');
+    
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Not authenticated');
+        return;
+      }
+
+      try {
+        // Get user data from localStorage instead of placeholder
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+
+        // Total Items
+        const inventoryResponse = await axios.get('http://localhost:8080/inventory', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStats((prev) => ({ ...prev, totalItems: inventoryResponse.data.length }));
+
+        // Low Stock Items
+        const lowStockResponse = await axios.get('http://localhost:8080/inventory/low-stock', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLowStockItems(lowStockResponse.data.map((item) => ({
+          name: item.name,
+          quantity: `${item.quantity} units`,
+          status: 'Low Stock',
+        })));
+        setStats((prev) => ({ ...prev, lowStockItems: lowStockResponse.data.length }));
+
+        // Expiring Soon Items
+        const expiryResponse = await axios.get('http://localhost:8080/alerts/expiry', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setExpiringItems(expiryResponse.data.map((item) => ({
+          name: item.name,
+          expiry: item.expiryDate,
+          status: 'Expiring',
+        })));
+        setStats((prev) => ({ ...prev, expiringSoon: expiryResponse.data.length }));
+      } catch (err) {
+        setError('Failed to load dashboard data');
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleRestock = async (itemName) => {
+    // Placeholder: Increase quantity (requires item ID or a new API)
+    alert(`Restocking ${itemName} - Implement PUT /inventory/{id} logic here`);
   };
-  const lowStockItems = [
-    { name: 'Organic Brown Rice', quantity: '5 kg', status: 'Low Stock' },
-    { name: 'Whole Wheat Pasta', quantity: '8 boxes', status: 'Low Stock' },
-    { name: 'Quinoa', quantity: '3 kg', status: 'Low Stock' },
-  ];
-  const expiringItems = [
-    { name: 'Fresh Milk', expiry: 'Jan 25, 2024', status: 'Expiring' },
-    { name: 'Yogurt', expiry: 'Jan 20, 2024', status: 'Expiring' },
-    { name: 'Orange Juice', expiry: 'Jan 27, 2024', status: 'Expiring' },
-  ];
 
   return (
-    <Layout userName={user.name} userRole={user.role}>
-      {/* Main Dashboard Content */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">
+    <Layout>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 mb-8 text-white">
+        <h2 className="text-3xl font-bold">
           Welcome back, {user.name}
-          <span className="ml-2 text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+          <span className="ml-3 text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
             {user.role}
           </span>
         </h2>
-        <p className="text-gray-500 mt-1">
-          Here’s what’s happening with your inventory
-        </p>
+        <p className="mt-2 opacity-90">Here's what's happening with your inventory today</p>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="flex items-center">
-              <svg
-                className="w-8 h-8 text-blue-500 mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
-              </svg>
-              <div>
-                <p className="text-3xl font-bold text-gray-800">{stats.totalItems}</p>
-                <p className="text-gray-500">Total Items</p>
-                <p className="text-green-500 text-sm mt-1">+12%</p>
-              </div>
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Stats Cards with improved UI */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <FiPackage className="w-6 h-6 text-blue-500" />
+            </div>
+            <div className="ml-4">
+              <p className="text-4xl font-bold text-gray-800">{stats.totalItems}</p>
+              <p className="text-sm text-gray-500 mt-1">Total Items</p>
             </div>
           </div>
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="flex items-center">
-              <svg
-                className="w-8 h-8 text-orange-500 mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div>
-                <p className="text-3xl font-bold text-gray-800">{stats.lowStockItems}</p>
-                <p className="text-gray-500">Low Stock Items</p>
-              </div>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-red-50 rounded-lg">
+              <FiAlertCircle className="w-6 h-6 text-red-500" />
             </div>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="flex items-center">
-              <svg
-                className="w-8 h-8 text-yellow-500 mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div>
-                <p className="text-3xl font-bold text-gray-800">{stats.expiringSoon}</p>
-                <p className="text-gray-500">Items Expiring Soon</p>
-              </div>
+            <div className="ml-4">
+              <p className="text-4xl font-bold text-gray-800">{stats.lowStockItems}</p>
+              <p className="text-sm text-gray-500 mt-1">Low Stock Items</p>
             </div>
           </div>
         </div>
 
-        {/* Low Stock and Expiring Soon Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {/* Low Stock Items */}
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Low Stock Items</h3>
-            {lowStockItems.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 border-b last:border-b-0"
-              >
-                <div>
-                  <p className="text-gray-800">{item.name}</p>
-                  <p className="text-sm text-gray-500">
-                    Quantity left: {item.quantity}{' '}
-                    <span className="text-red-500">{item.status}</span>
-                  </p>
-                </div>
-                <button className="px-4 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200">
-                  Restock
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Expiring Soon Items */}
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Expiring Soon</h3>
-            {expiringItems.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 border-b last:border-b-0"
-              >
-                <div>
-                  <p className="text-gray-800">{item.name}</p>
-                  <p className="text-sm text-gray-500">
-                    Expires: {item.expiry}{' '}
-                    <span className="text-yellow-500">{item.status}</span>
-                  </p>
-                </div>
-              </div>
-            ))}
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+          <div className="flex items-center">
+            <div className="p-3 bg-yellow-50 rounded-lg">
+              <FiClock className="w-6 h-6 text-yellow-500" />
+            </div>
+            <div className="ml-4">
+              <p className="text-4xl font-bold text-gray-800">{stats.expiringSoon}</p>
+              <p className="text-sm text-gray-500 mt-1">Expiring Soon</p>
+            </div>
           </div>
         </div>
       </div>
-    </Layout>
+
+      {/* Low Stock and Expiring Soon Sections with improved UI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <FiAlertCircle className="w-5 h-5 text-red-500 mr-2" />
+            Low Stock Items
+          </h3>
+          <div className="space-y-4">
+            {lowStockItems.length === 0 ? (
+              <p className="text-gray-500">No low stock items</p>
+            ) : (
+              lowStockItems.map((item, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-800">{item.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Quantity left: <span className="text-red-500 font-medium">{item.quantity}</span>
+                    </p>
+                  </div>
+                  {user.role === 'ADMIN' && (
+                    <button
+                      onClick={() => handleRestock(item.name)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Restock
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <FiClock className="w-5 h-5 text-yellow-500 mr-2" />
+            Expiring Soon
+          </h3>
+          <div className="space-y-4">
+            {expiringItems.length === 0 ? (
+              <p className="text-gray-500">No expiring items</p>
+            ) : (
+              expiringItems.map((item, index) => (
+                <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                  <p className="font-medium text-gray-800">{item.name}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Expires: <span className="text-yellow-500 font-medium">{item.expiry}</span>
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </Layout>
   );
 }
 

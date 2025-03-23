@@ -12,7 +12,7 @@ function Login() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:8080/login', { email, password });
+      const response = await axios.post('http://localhost:8080/user/login', { email, password });
       localStorage.setItem('token', response.data.token);
       window.location.href = '/dashboard';
     } catch (err) {
