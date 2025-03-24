@@ -91,7 +91,7 @@ function Dashboard() {
 
   return (
     <Layout>
-        <ToastContainer position="top-right" autoClose={3000} />;
+        <ToastContainer position="top-right" autoClose={3000} />
     <div className="p-6 max-w-7xl mx-auto">
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 mb-8 text-white">
         <h2 className="text-3xl font-bold">
