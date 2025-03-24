@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 function Register() {
-  const [fullName, setFullName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [success, setSuccess] = useState('');
@@ -17,12 +17,12 @@ function Register() {
 
     try {
       const response = await axios.post('http://localhost:8080/user/register', {
-        fullName,
+        name,
         email,
         password,
       });
       setSuccess('Account created successfully! Please log in.');
-      setFullName('');
+      setName('');
       setEmail('');
       setPassword('');
     } catch (err) {
@@ -64,8 +64,8 @@ function Register() {
         <div className="mb-4">
           <input
             type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Enter your full name"
             className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
             required
