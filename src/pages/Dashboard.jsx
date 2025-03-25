@@ -6,8 +6,15 @@ import { FiPackage, FiAlertCircle, FiClock } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AIInventorySuggestions from '../components/AIAccordion';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
+import { Doughnut, Line, Bar } from 'react-chartjs-2';
+import Papa from 'papaparse';
+import { defaults } from 'chart.js';
 
-function Dashboard() {
+ChartJS.register(ArcElement, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement);
+defaults.font.family = 'Inter';
+
+const Dashboard = () => {
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('userData');
     return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };
@@ -16,6 +23,7 @@ function Dashboard() {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [expiringItems, setExpiringItems] = useState([]);
   const [suggestions, setSuggestions] = useState({});
+  const [stockMovements, setStockMovements] = useState([]); 
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -65,18 +73,32 @@ function Dashboard() {
         );
         setStats((prev) => ({ ...prev, expiringSoon: expiryResponse.data.length }));
 
-        // Fetch AI Suggestions
+        // AI Suggestions
         const suggestionsResponse = await axios.get('http://localhost:8080/inventory/suggestions', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSuggestions(suggestionsResponse.data);
+
+        // Stock Movements (Last 30 Days)
+        const endDate = new Date().toISOString().split('T')[0]; // Today
+        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days ago
+        const movementsResponse = await axios.get('http://localhost:8080/reports/custom', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { startDate, endDate },
+        });
+        // Parse CSV response using PapaParse
+        const parsedData = Papa.parse(movementsResponse.data, {
+          header: true, // Use the first row as headers
+          skipEmptyLines: true, // Skip empty lines
+        });
+        setStockMovements(parsedData.data || []);
       } catch (err) {
         setError('Failed to load dashboard data');
         toast.error('Failed to load dashboard data');
       }
     };
     fetchData();
-  }, []); // Empty dependency array to ensure this runs only once on mount
+  }, []);
 
   const handleRestock = async (itemName) => {
     try {
@@ -84,7 +106,7 @@ function Dashboard() {
       const item = lowStockItems.find((i) => i.name === itemName);
       if (!item.id) throw new Error('Item ID not available');
 
-      const updatedItem = { ...item, quantity: parseInt(item.quantity) + 10 }; // Example: Add 10 units
+      const updatedItem = { ...item, quantity: parseInt(item.quantity) + 10 };
       await axios.put(
         `http://localhost:8080/inventory/${item.id}`,
         updatedItem,
@@ -102,6 +124,105 @@ function Dashboard() {
       setError('Failed to restock item');
       console.error(err);
     }
+  };
+
+  // Donut Chart Data
+  const stockLevelsData = {
+    labels: ['Low Stock', 'Expiring Soon', 'Normal Stock'],
+    datasets: [
+      {
+        data: [
+          stats.lowStockItems,
+          stats.expiringSoon,
+          stats.totalItems - (stats.lowStockItems + stats.expiringSoon),
+        ],
+        backgroundColor: ['#EF4444', '#FBBF24', '#10B981'],
+        hoverBackgroundColor: ['#DC2626', '#F59E0B', '#059669'],
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  // Line Chart Data
+  const getMovementTrendsData = () => {
+    const movementsByDate = stockMovements.reduce((acc, movement) => {
+      const date = new Date(movement.Timestamp).toISOString().split('T')[0];
+      if (!acc[date]) acc[date] = { ADDED: 0, CONSUMED: 0, UPDATED: 0, DELETED: 0 };
+      acc[date][movement.MovementType] = (acc[date][movement.MovementType] || 0) + parseInt(movement.QuantityChanged);
+      return acc;
+    }, {});
+
+
+    const labels = [];
+    const endDate = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(endDate.getTime() - i * 24 * 60 * 60 * 1000);
+      labels.push(date.toISOString().split('T')[0]);
+    }
+
+    const datasets = [
+      {
+        label: 'Added',
+        data: labels.map((date) => movementsByDate[date]?.ADDED || 0),
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        fill: true,
+      },
+      {
+        label: 'Consumed',
+        data: labels.map((date) => movementsByDate[date]?.CONSUMED || 0),
+        borderColor: '#EF4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+        fill: true,
+      },
+      {
+        label: 'Updated',
+        data: labels.map((date) => movementsByDate[date]?.UPDATED || 0),
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        fill: true,
+      },
+      {
+        label: 'Deleted',
+        data: labels.map((date) => movementsByDate[date]?.DELETED || 0),
+        borderColor: '#FBBF24',
+        backgroundColor: 'rgba(251, 191, 36, 0.2)',
+        fill: true,
+      },
+    ];
+
+    return {
+      labels,
+      datasets,
+    };
+  };
+
+  // Bar Chart Data
+  const getTopConsumedItemsData = () => {
+    const consumedByItem = stockMovements
+      .filter((movement) => movement.MovementType === 'CONSUMED')
+      .reduce((acc, movement) => {
+        const itemName = movement.ItemName;
+        acc[itemName] = (acc[itemName] || 0) + Math.abs(parseInt(movement.QuantityChanged));
+        return acc;
+      }, {});
+      // Sort functionality
+    const topItems = Object.entries(consumedByItem)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5);
+
+    return {
+      labels: topItems.map(([itemName]) => itemName),
+      datasets: [
+        {
+          label: 'Units Consumed',
+          data: topItems.map(([, quantity]) => quantity),
+          backgroundColor: '#EF4444',
+          borderColor: '#DC2626',
+          borderWidth: 1,
+        },
+      ],
+    };
   };
 
   return (
@@ -124,7 +245,6 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
             <div className="flex items-center">
@@ -160,6 +280,70 @@ function Dashboard() {
                 <p className="text-sm text-gray-500 mt-1">Expiring Soon</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Donut Chart */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Stock Levels Overview</h3>
+            <div className="h-64">
+              <Doughnut
+                data={stockLevelsData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (context) => `${context.label}: ${context.raw}` } },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Line Chart */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Stock Movement Trends (Last 30 Days)</h3>
+            <div className="h-64">
+              <Line
+                data={getMovementTrendsData()}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    x: { title: { display: true, text: 'Date' } },
+                    y: { title: { display: true, text: 'Quantity' } },
+                  },
+                  plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}` } },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Bar Chart */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Top 5 Consumed Items (Last 30 Days)</h3>
+          <div className="h-64">
+            <Bar
+              data={getTopConsumedItemsData()}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: { title: { display: true, text: 'Item' } },
+                  y: { title: { display: true, text: 'Units Consumed' } },
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { callbacks: { label: (context) => `${context.label}: ${context.raw} units` } },
+                },
+              }}
+            />
           </div>
         </div>
 
