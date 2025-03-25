@@ -1,4 +1,3 @@
-// Inventory.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -6,17 +5,19 @@ import Layout from '../components/Layout';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FiSearch, FiCalendar, FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
+import Select from 'react-select';
 
-// Modal Component (Moved outside to prevent recreation)
-const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFormChange, handleFormSubmit, isSubmitting }) => {
+const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFormChange, handleFormSubmit, isSubmitting, suppliers }) => {
   if (!isOpen) return null;
+
+  const supplierOptions = suppliers.map(supplier => ({
+    value: supplier.id,
+    label: supplier.name
+  }));
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      {/* Overlay */}
       <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
-
-      {/* Modal Content */}
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-lg z-50">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
           {isEdit ? 'Edit Inventory Item' : 'Add Inventory Item'}
@@ -26,7 +27,6 @@ const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFo
         </p>
 
         <form onSubmit={(e) => handleFormSubmit(e, isEdit)}>
-          {/* Item Name */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-1">
               Item Name <span className="text-red-500">*</span>
@@ -42,7 +42,6 @@ const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFo
             />
           </div>
 
-          {/* Quantity and Threshold */}
           <div className="flex space-x-4 mb-4">
             <div className="flex-1">
               <label className="block text-gray-700 mb-1">
@@ -74,25 +73,20 @@ const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFo
             </div>
           </div>
 
-          {/* Expiry Date */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-1">
               Expiry Date <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <input
-                type="date"
-                name="expiryDate"
-                value={formData.expiryDate}
-                onChange={handleFormChange}
-                placeholder="yyyy / mm / dd"
-                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                required
-              />
-            </div>
+            <input
+              type="date"
+              name="expiryDate"
+              value={formData.expiryDate}
+              onChange={handleFormChange}
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
           </div>
 
-          {/* Category */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-1">
               Category <span className="text-red-500">*</span>
@@ -108,97 +102,92 @@ const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFo
             />
           </div>
 
-          {/* Supplier */}
           <div className="mb-6">
             <label className="block text-gray-700 mb-1">
               Supplier <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              name="supplier"
-              value={formData.supplier}
-              onChange={handleFormChange}
-              placeholder="Enter supplier name"
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+            <Select
+              options={supplierOptions}
+              value={supplierOptions.find(option => option.value === formData.supplier?.id) || null}
+              onChange={(selected) => handleFormChange({ target: { name: 'supplier', value: selected ? { id: selected.value } : null } })}
+              placeholder="Search and select supplier"
+              isClearable
+              className="basic-single"
+              classNamePrefix="select"
               required
             />
           </div>
 
-          {/* Buttons */}
           <div className="flex space-x-4">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center"
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {isEdit ? 'Updating...' : 'Saving...'}
-              </>
-            ) : (
-              isEdit ? 'Update Item' : 'Save Item'
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isEdit ? 'Updating...' : 'Saving...'}
+                </>
+              ) : (
+                isEdit ? 'Update Item' : 'Save Item'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
 });
 
-// Delete Confirmation Modal (Moved outside to prevent recreation)
 const DeleteModal = React.memo(({ isOpen, onClose, onConfirm, itemName, isDeleting }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      {/* Overlay */}
       <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
-
-      {/* Modal Content */}
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md z-50">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Confirm Deletion</h2>
         <p className="text-gray-500 mb-6">
           Are you sure you want to delete <span className="font-semibold">{itemName}</span>? This action cannot be undone.
         </p>
         <div className="flex space-x-4">
-        <button
-          onClick={onConfirm}
-          disabled={isDeleting}
-          className="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 flex items-center justify-center"
-        >
-          {isDeleting ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Deleting...
-            </>
-          ) : (
-            'Delete'
-          )}
-        </button>
-        <button
-          onClick={onClose}
-          disabled={isDeleting}
-          className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-        >
-          Cancel
-        </button>
-      </div>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 flex items-center justify-center"
+          >
+            {isDeleting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -210,6 +199,7 @@ const Inventory = () => {
   const [inventoryItems, setInventoryItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [suppliers, setSuppliers] = useState([]);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -219,20 +209,18 @@ const Inventory = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const itemsPerPage = 8;
-  
 
-  // State for Add/Edit form
   const [formData, setFormData] = useState({
     name: '',
     quantity: 0,
     threshold: 0,
     expiryDate: '',
     category: '',
-    supplier: '',
+    supplier: null 
   });
 
   useEffect(() => {
-    const fetchInventory = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
         toast.error('Not authenticated');
@@ -246,24 +234,29 @@ const Inventory = () => {
         const userData = { name: 'John Doe', role: 'ADMIN' };
         setUser(userData);
 
-        // Fetch inventory with search and category filters
+        // Fetch inventory
         const params = {};
         if (searchQuery) params.name = searchQuery;
         if (categoryFilter && categoryFilter !== 'All Category') params.category = categoryFilter;
-
-        const response = await axios.get('http://localhost:8080/inventory/search', {
+        const inventoryResponse = await axios.get('http://localhost:8080/inventory/search', {
           headers: { Authorization: `Bearer ${token}` },
           params,
         });
-        setInventoryItems(response.data);
+        setInventoryItems(inventoryResponse.data);
+
+        // Fetch suppliers
+        const suppliersResponse = await axios.get('http://localhost:8080/suppliers', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSuppliers(suppliersResponse.data);
       } catch (err) {
-        setError('Failed to load inventory');
-        toast.error('Failed to load inventory');
+        setError('Failed to load data');
+        toast.error('Failed to load data');
         console.error(err);
       }
     };
-    fetchInventory();
-  }, [searchQuery, categoryFilter]);
+    fetchData();
+  }, [searchQuery, categoryFilter, navigate]);
 
   const handleSearch = useCallback((e) => setSearchQuery(e.target.value), []);
   const handleCategoryChange = useCallback((e) => setCategoryFilter(e.target.value), []);
@@ -275,10 +268,10 @@ const Inventory = () => {
       threshold: 0,
       expiryDate: '',
       category: '',
-      supplier: '',
+      supplier: suppliers.length > 0 ? { id: suppliers[0].id } : null // Default to first supplier if available
     });
     setIsAddModalOpen(true);
-  }, []);
+  }, [suppliers]);
 
   const handleEdit = useCallback((item) => {
     setSelectedItem(item);
@@ -287,8 +280,8 @@ const Inventory = () => {
       quantity: item.quantity,
       threshold: item.threshold || 0,
       expiryDate: item.expiryDate,
-      category: item.category,
-      supplier: item.supplierInfo,
+      category: item.category || '',
+      supplier: item.supplier ? { id: item.supplier.id } : null
     });
     setIsEditModalOpen(true);
   }, []);
@@ -320,7 +313,10 @@ const Inventory = () => {
 
   const handleFormChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'supplier' ? value : value // Handle supplier as object
+    }));
   }, []);
 
   const handleFormSubmit = useCallback(
@@ -334,49 +330,32 @@ const Inventory = () => {
         return;
       }
 
+      const payload = {
+        name: formData.name,
+        quantity: parseInt(formData.quantity),
+        threshold: parseInt(formData.threshold),
+        expiryDate: formData.expiryDate,
+        category: formData.category,
+        supplier: formData.supplier
+      };
+
       try {
         if (isEdit) {
-          // Update item
           await axios.put(
             `http://localhost:8080/inventory/${selectedItem.id}`,
-            {
-              name: formData.name,
-              quantity: parseInt(formData.quantity),
-              threshold: parseInt(formData.threshold),
-              expiryDate: formData.expiryDate,
-              category: formData.category,
-              supplierInfo: formData.supplier,
-            },
+            payload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setInventoryItems(
             inventoryItems.map((item) =>
-              item.id === selectedItem.id
-                ? {
-                    ...item,
-                    name: formData.name,
-                    quantity: parseInt(formData.quantity),
-                    threshold: parseInt(formData.threshold),
-                    expiryDate: formData.expiryDate,
-                    category: formData.category,
-                    supplierInfo: formData.supplier,
-                  }
-                : item
+              item.id === selectedItem.id ? { ...item, ...payload, supplier: suppliers.find(s => s.id === payload.supplier.id) } : item
             )
           );
           toast.success('Item updated successfully');
         } else {
-          // Add new item
           const response = await axios.post(
             'http://localhost:8080/inventory',
-            {
-              name: formData.name,
-              quantity: parseInt(formData.quantity),
-              threshold: parseInt(formData.threshold),
-              expiryDate: formData.expiryDate,
-              category: formData.category,
-              supplierInfo: formData.supplier,
-            },
+            payload,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setInventoryItems([...inventoryItems, response.data]);
@@ -386,14 +365,14 @@ const Inventory = () => {
         setIsEditModalOpen(false);
       } catch (err) {
         toast.error(isEdit ? 'Failed to update item' : 'Failed to add item');
+        console.error(err);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [formData, selectedItem, inventoryItems]
+    [formData, selectedItem, inventoryItems, suppliers]
   );
 
-  // Pagination
   const totalItems = inventoryItems.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -405,18 +384,7 @@ const Inventory = () => {
 
   return (
     <Layout userName={user.name} userRole={user.role}>
-        <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="light" />
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
@@ -433,7 +401,7 @@ const Inventory = () => {
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         {/* Filters Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-6">
+        <div className="flex flex-col w-1/2 md:flex-row md:items-center md:space-x-4 mb-6">
           <div className="relative flex-1 mb-4 md:mb-0">
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -468,19 +436,7 @@ const Inventory = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
             </svg>
           </div>
-          <div className="relative mb-4 md:mb-0">
-            <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Date Range (Not Implemented)"
-              className="pl-10 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled
-            />
-          </div>
-          <button className="flex items-center px-4 py-2 border rounded-lg hover:bg-gray-100">
-            <FiDownload className="mr-2" />
-            Export (Not Implemented)
-          </button>
+          
         </div>
 
         {/* Table Section */}
@@ -510,7 +466,7 @@ const Inventory = () => {
                     <td className="p-4 text-gray-800">{item.quantity}</td>
                     <td className="p-4 text-gray-800">{item.expiryDate}</td>
                     <td className="p-4 text-gray-800">{item.category}</td>
-                    <td className="p-4 text-gray-800">{item.supplierInfo}</td>
+                    <td className="p-4 text-gray-800">{item.supplier ? item.supplier.name : 'N/A'}</td>
                     {user.role === 'ADMIN' && (
                       <td className="p-4 flex space-x-2">
                         <button
@@ -571,33 +527,35 @@ const Inventory = () => {
 
         {/* Modals */}
         <InventoryModal
-  isOpen={isAddModalOpen}
-  onClose={() => setIsAddModalOpen(false)}
-  isEdit={false}
-  formData={formData}
-  handleFormChange={handleFormChange}
-  handleFormSubmit={handleFormSubmit}
-  isSubmitting={isSubmitting}
-/>
-<InventoryModal
-  isOpen={isEditModalOpen}
-  onClose={() => setIsEditModalOpen(false)}
-  isEdit={true}
-  formData={formData}
-  handleFormChange={handleFormChange}
-  handleFormSubmit={handleFormSubmit}
-  isSubmitting={isSubmitting}
-/>
-<DeleteModal
-  isOpen={isDeleteModalOpen}
-  onClose={() => setIsDeleteModalOpen(false)}
-  onConfirm={confirmDelete}
-  itemName={selectedItem?.name || ''}
-  isDeleting={isDeleting}
-/>
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          isEdit={false}
+          formData={formData}
+          handleFormChange={handleFormChange}
+          handleFormSubmit={handleFormSubmit}
+          isSubmitting={isSubmitting}
+          suppliers={suppliers}
+        />
+        <InventoryModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          isEdit={true}
+          formData={formData}
+          handleFormChange={handleFormChange}
+          handleFormSubmit={handleFormSubmit}
+          isSubmitting={isSubmitting}
+          suppliers={suppliers}
+        />
+        <DeleteModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          itemName={selectedItem?.name || ''}
+          isDeleting={isDeleting}
+        />
       </div>
     </Layout>
   );
-}
+};
 
 export default Inventory;
