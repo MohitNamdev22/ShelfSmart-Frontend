@@ -8,7 +8,8 @@ import {
   MdBarChart, 
   MdSettings, 
   MdAdd, 
-  MdImportExport
+  MdImportExport,
+  MdAnalytics
 } from 'react-icons/md';
 
 function Sidebar({ userRole }) {
@@ -20,6 +21,7 @@ function Sidebar({ userRole }) {
     { path: '/inventory', label: 'Inventory', icon: MdInventory },
     { path: '/reports', label: 'Reports', icon: MdBarChart },
     { path: '/suppliers', label: 'Suppliers', icon: MdImportExport },
+    { path: '/activity', label: 'User Activity', icon: MdAnalytics },
     { path: '/settings', label: 'Settings', icon: MdSettings },
   ];
 

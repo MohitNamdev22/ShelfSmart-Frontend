@@ -1,4 +1,3 @@
-// Suppliers.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Layout from '../components/Layout';
@@ -14,7 +13,7 @@ function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10); // Number of items per page
+  const [itemsPerPage] = useState(10); 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -26,9 +25,9 @@ function Suppliers() {
     email: '',
     address: '',
   });
-  const [isAdding, setIsAdding] = useState(false); // Loading state for adding a supplier
-  const [isEditing, setIsEditing] = useState(false); // Loading state for editing a supplier
-  const [isDeleting, setIsDeleting] = useState(false); // Loading state for deleting a supplier
+  const [isAdding, setIsAdding] = useState(false); 
+  const [isEditing, setIsEditing] = useState(false); 
+  const [isDeleting, setIsDeleting] = useState(false); 
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -66,7 +65,6 @@ function Suppliers() {
     );
   });
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
 const indexOfLastItem = currentPage * itemsPerPage;
 const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -87,7 +85,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       return;
     }
 
-    setIsAdding(true); // Start loading
+    setIsAdding(true);
     try {
       const response = await axios.post('http://localhost:8080/suppliers', newSupplier, {
         headers: { Authorization: `Bearer ${token}` },
@@ -101,7 +99,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       toast.error('Failed to add supplier');
       console.error(err);
     } finally {
-      setIsAdding(false); // Stop loading
+      setIsAdding(false);
     }
   };
 
@@ -113,7 +111,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       return;
     }
 
-    setIsEditing(true); // Start loading
+    setIsEditing(true); 
     try {
       const response = await axios.put(
         `http://localhost:8080/suppliers/${selectedSupplier.id}`,
@@ -135,7 +133,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       toast.error('Failed to update supplier');
       console.error(err);
     } finally {
-      setIsEditing(false); // Stop loading
+      setIsEditing(false);
     }
   };
 
@@ -147,7 +145,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       return;
     }
 
-    setIsDeleting(true); // Start loading
+    setIsDeleting(true); 
     try {
       await axios.delete(`http://localhost:8080/suppliers/${selectedSupplier.id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -161,7 +159,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       toast.error('Failed to delete supplier');
       console.error(err);
     } finally {
-      setIsDeleting(false); // Stop loading
+      setIsDeleting(false);
     }
   };
 
@@ -224,7 +222,6 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
           </div>
         )}
 
-        {/* Search Field */}
 <div className="mb-6">
   <div className="relative">
     <input
@@ -331,7 +328,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
           </div>
         )}
 
-        {/* Add Supplier Modal */}
+        {/* Add Modal */}
         {isAddModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -440,7 +437,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
           </div>
         )}
 
-        {/* Edit Supplier Modal */}
+        {/* Edit Modal */}
         {isEditModalOpen && selectedSupplier && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -545,7 +542,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
           </div>
         )}
 
-        {/* Delete Supplier Modal */}
+        {/* Delete Modal */}
         {isDeleteModalOpen && selectedSupplier && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">

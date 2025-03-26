@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Reports from './pages/Report';
 import Suppliers from './pages/Suppliers';
+import UserActivity from './pages/UserActivity';
 
 function App() {
 
@@ -18,6 +19,7 @@ function App() {
       <Route path="/inventory" element={<Inventory />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/suppliers" element={<Suppliers />} />
+      <Route path="/activity" element={<UserActivity />} />
       <Route path="/" element={<Dashboard />} />
     </Routes>
   </Router>

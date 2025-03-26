@@ -231,7 +231,7 @@ const Inventory = () => {
       }
 
       try {
-        // Fetch user data (placeholder)
+        // (placeholder data)
         const userData = { name: 'John Doe', role: 'ADMIN' };
         setUser(userData);
 
@@ -269,7 +269,7 @@ const Inventory = () => {
       threshold: 0,
       expiryDate: '',
       category: '',
-      supplier: suppliers.length > 0 ? { id: suppliers[0].id } : null // Default to first supplier if available
+      supplier: suppliers.length > 0 ? { id: suppliers[0].id } : null 
     });
     setIsAddModalOpen(true);
   }, [suppliers]);
@@ -316,7 +316,7 @@ const Inventory = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'supplier' ? value : value // Handle supplier as object
+      [name]: name === 'supplier' ? value : value
     }));
   }, []);
 
