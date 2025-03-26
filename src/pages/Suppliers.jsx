@@ -169,7 +169,10 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Inventory Management</h2>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Suppliers Management</h2>
+          <p className="text-gray-500">View and manage your suppliers</p>
+        </div>
           {user.role === 'ADMIN' && (
           <div className="mb-6">
             <button

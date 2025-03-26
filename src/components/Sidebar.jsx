@@ -22,11 +22,9 @@ function Sidebar({ userRole }) {
     { path: '/reports', label: 'Reports', icon: MdBarChart },
     { path: '/suppliers', label: 'Suppliers', icon: MdImportExport },
     { path: '/activity', label: 'User Activity', icon: MdAnalytics },
-    { path: '/settings', label: 'Settings', icon: MdSettings },
   ];
 
   const adminItems = userRole === 'ADMIN' ? [
-    { path: '/add-item', label: 'Manage Inventory', icon: MdAdd }
   ] : [];
 
   const isActive = (path) => location.pathname === path;
