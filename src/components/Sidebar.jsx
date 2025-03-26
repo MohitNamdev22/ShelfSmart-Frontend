@@ -12,7 +12,7 @@ import {
   MdAnalytics
 } from 'react-icons/md';
 
-function Sidebar({ userRole }) {
+const Sidebar = ({ userRole }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 

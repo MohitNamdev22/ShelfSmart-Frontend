@@ -5,7 +5,7 @@ import { FiUsers, FiEdit, FiTrash2, FiPlus } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-function Suppliers() {
+const Suppliers = () => {
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('userData');
     return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };

@@ -6,7 +6,7 @@ import { FiFileText, FiDownload, FiCalendar } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-function Reports() {
+const Reports = () => {
   const [user, setUser] = useState({ name: 'Loading...', role: 'USER' });
   const [dailyMovements, setDailyMovements] = useState([]);
   const [weeklyMovements, setWeeklyMovements] = useState([]);

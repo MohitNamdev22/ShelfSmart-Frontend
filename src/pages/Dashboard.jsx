@@ -70,7 +70,6 @@ const Dashboard = () => {
         );
         setStats((prev) => ({ ...prev, lowStockItems: lowStockResponse.data.length }));
 
-        // Expiring Soon Items
         const expiryResponse = await axios.get('http://localhost:8080/alerts/expiry', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -83,23 +82,22 @@ const Dashboard = () => {
         );
         setStats((prev) => ({ ...prev, expiringSoon: expiryResponse.data.length }));
 
-        // AI Suggestions
         const suggestionsResponse = await axios.get('http://localhost:8080/inventory/suggestions', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSuggestions(suggestionsResponse.data);
 
         // Stock Movements (Last 30 Days)
-        const endDate = new Date().toISOString().split('T')[0]; // Today
-        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days ago
+        const endDate = new Date().toISOString().split('T')[0]; 
+        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const movementsResponse = await axios.get('http://localhost:8080/reports/custom', {
           headers: { Authorization: `Bearer ${token}` },
           params: { startDate, endDate },
         });
-        // Parse CSV response using PapaParse
+
         const parsedData = Papa.parse(movementsResponse.data, {
-          header: true, // Use the first row as headers
-          skipEmptyLines: true, // Skip empty lines
+          header: true,
+          skipEmptyLines: true,
         });
         setStockMovements(parsedData.data || []);
       } catch (err) {

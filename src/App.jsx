@@ -8,7 +8,7 @@ import Reports from './pages/Report';
 import Suppliers from './pages/Suppliers';
 import UserActivity from './pages/UserActivity';
 
-function App() {
+const App = () => {
 
   return (
     <Router>

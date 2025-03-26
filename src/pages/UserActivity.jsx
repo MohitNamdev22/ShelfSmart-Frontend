@@ -3,7 +3,7 @@ import axios from 'axios';
 import Layout from '../components/Layout';
 import { FiUser, FiActivity } from 'react-icons/fi';
 
-function UserActivity() {
+const UserActivity = () => {
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('userData');
     return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };

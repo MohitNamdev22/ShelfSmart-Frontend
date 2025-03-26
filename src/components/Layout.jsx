@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 
-function Layout({ userName, userRole, children }) {
+const Layout = ({ userName, userRole, children }) => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}

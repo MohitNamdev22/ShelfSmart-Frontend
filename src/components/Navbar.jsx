@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiBell, FiChevronDown, FiUser } from 'react-icons/fi';
+import { FiBell, FiChevronDown, FiUser, FiAlertCircle, FiClock } from 'react-icons/fi';
 import axios from 'axios';
 
-function Navbar() {
+const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState({
+    lowStock: [],
+    expiringSoon: []
+  });
   const [userData, setUserData] = useState(() => {
-    // Initialize userData from localStorage if available
     const savedUser = localStorage.getItem('userData');
     return savedUser ? JSON.parse(savedUser) : null;
   });
@@ -24,7 +28,6 @@ function Navbar() {
           }
         });
         
-        // Store user data in localStorage
         localStorage.setItem('userData', JSON.stringify(response.data));
         setUserData(response.data);
       } catch (error) {
@@ -35,11 +38,49 @@ function Navbar() {
       }
     };
 
-    // Only fetch if we don't have userData
     if (!userData) {
       fetchUserData();
     }
   }, [userData]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+      const [lowStockResponse, expiryResponse] = await Promise.all([
+        axios.get('http://localhost:8080/inventory/low-stock', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get('http://localhost:8080/alerts/expiry', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+        setNotifications({
+          lowStock: lowStockResponse.data.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity
+          })) || [],
+          expiringSoon: expiryResponse.data.map(item => ({
+            id: item.id,
+            name: item.name,
+            expiryDate: item.expiryDate
+          })) || []
+        });
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 300000);
+    return () => clearInterval(interval);
+  }, []);
+  const totalNotifications = notifications.lowStock.length + notifications.expiringSoon.length;
 
   const handleLogout = async () => {
     try {
@@ -61,18 +102,76 @@ function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 h-[70px]">
       <div className="flex items-center justify-between p-4">
-        {/* Logo and App Name */}
         <Link to="/dashboard" className="flex items-center space-x-2">
           <img src="icon.png" alt="ShelfSmart Icon" className="w-11 h-11" />
           <span className="text-xl font-bold text-gray-800">ShelfSmart</span>
         </Link>
 
-        {/* User Profile and Notifications */}
         <div className="flex items-center space-x-4">
-          {/* Notification Bell */}
           <div className="relative">
-            <FiBell className="w-6 h-6 text-gray-600" />
-            <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full"></span>
+            <button
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              className="relative focus:outline-none"
+            >
+              <FiBell className="w-6 h-6 text-gray-600 hover:text-gray-800" />
+              {totalNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
+                  {totalNotifications}
+                </span>
+              )}
+            </button>
+
+            {isNotificationOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-2 z-50">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <h3 className="font-semibold text-gray-800">Notifications</h3>
+                </div>
+
+                {totalNotifications === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No notifications
+                  </div>
+                ) : (
+                  <>
+                    {notifications.lowStock.length > 0 && (
+                      <div className="px-4 py-2">
+                        <div className="flex items-center text-red-600 mb-2">
+                          <FiAlertCircle className="mr-2" />
+                          <span className="font-medium">Low Stock Items</span>
+                        </div>
+                        {notifications.lowStock.map(item => (
+                          <div key={item.id} className="pl-6 py-1 text-sm text-gray-600">
+                            {item.name} - {item.quantity} remaining
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {notifications.expiringSoon.length > 0 && (
+                      <div className="px-4 py-2 border-t border-gray-100">
+                        <div className="flex items-center text-yellow-600 mb-2">
+                          <FiClock className="mr-2" />
+                          <span className="font-medium">Expiring Soon</span>
+                        </div>
+                        {notifications.expiringSoon.map(item => (
+                          <div key={item.id} className="pl-6 py-1 text-sm text-gray-600">
+                            {item.name} - Expires {new Date(item.expiryDate).toLocaleDateString()}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <Link
+                      to="/inventory"
+                      className="block mt-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 text-center"
+                      onClick={() => setIsNotificationOpen(false)}
+                    >
+                      View All in Inventory
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* User Profile Dropdown */}
