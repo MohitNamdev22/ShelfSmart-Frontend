@@ -114,7 +114,14 @@ const Dashboard = () => {
       const item = lowStockItems.find((i) => i.name === itemName);
       if (!item.id) throw new Error('Item ID not available');
 
-      const updatedItem = { ...item, quantity: parseInt(item.quantity) + 10 };
+      const updatedItem = { 
+        name: item.name,
+        quantity: parseInt(item.quantity) + 10,
+        threshold: item.threshold || 0,
+        expiryDate: item.expiryDate || null,
+        category: item.category || '',
+        supplier: item.supplier || null
+      };
       await axios.put(
         `http://localhost:8080/inventory/${item.id}`,
         updatedItem,
@@ -214,7 +221,7 @@ const Dashboard = () => {
         acc[itemName] = (acc[itemName] || 0) + Math.abs(parseInt(movement.QuantityChanged));
         return acc;
       }, {});
-      // Sort functionality
+      // Sort
     const topItems = Object.entries(consumedByItem)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
@@ -234,7 +241,7 @@ const Dashboard = () => {
   };
 
   return (
-    <Layout>
+    <Layout userName={user.name} userRole={user.role}>
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="p-6 max-w-7xl mx-auto">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 mb-8 text-white">

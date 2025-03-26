@@ -16,18 +16,24 @@ const Sidebar = ({ userRole }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  const navItems = [
+  const baseNavItems = [
     { path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
     { path: '/inventory', label: 'Inventory', icon: MdInventory },
     { path: '/reports', label: 'Reports', icon: MdBarChart },
-    { path: '/suppliers', label: 'Suppliers', icon: MdImportExport },
     { path: '/activity', label: 'User Activity', icon: MdAnalytics },
   ];
+
+  const adminNavItems = [
+    { path: '/suppliers', label: 'Suppliers', icon: MdImportExport },
+  ];
+
+  const navItems = userRole === 'ADMIN' ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+
+  const isActive = (path) => location.pathname === path;
 
   const adminItems = userRole === 'ADMIN' ? [
   ] : [];
 
-  const isActive = (path) => location.pathname === path;
 
   return (
     <>
@@ -39,11 +45,10 @@ const Sidebar = ({ userRole }) => {
         {isOpen ? <HiX size={24} /> : <HiMenu size={24} />}
       </button>
 
-      {/* Sidebar */}
       <div className={`fixed top-0 left-0 h-full bg-white shadow-lg w-64 transform ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0 transition-transform duration-300 ease-in-out z-10`}>
-        {/* Logo and App Name */}
+        
         <div className="p-6 flex items-center">
           <img src="icon.png" alt="ShelfSmart Icon" className="w-8 h-8 mr-2" />
           <h2 className="text-xl font-bold text-gray-800">ShelfSmart</h2>
@@ -51,7 +56,7 @@ const Sidebar = ({ userRole }) => {
 
         {/* Navigation Links */}
         <nav className="mt-4">
-          {[...navItems, ...adminItems].map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
