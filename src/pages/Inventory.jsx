@@ -114,6 +114,7 @@ const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFo
               isClearable
               className="basic-single"
               classNamePrefix="select"
+              menuPlacement="top"
               required
             />
           </div>

@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import { FiPackage, FiAlertCircle, FiClock } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 import AIInventorySuggestions from '../components/AIAccordion';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
 import { Doughnut, Line, Bar } from 'react-chartjs-2';
@@ -15,6 +16,15 @@ ChartJS.register(ArcElement, Tooltip, Legend, LineElement, BarElement, CategoryS
 defaults.font.family = 'Inter';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to access the dashboard');
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('userData');
     return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };
