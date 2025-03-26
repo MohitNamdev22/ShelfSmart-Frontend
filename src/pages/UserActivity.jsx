@@ -30,7 +30,12 @@ function UserActivity() {
         const response = await axios.get('http://localhost:8080/activity', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setActivities(response.data || []);
+
+        const sortedActivities = (response.data || []).sort((a, b) => {
+          return new Date(b.timestamp) - new Date(a.timestamp);
+        });
+      
+        setActivities(sortedActivities);
       } catch (err) {
         setError('Failed to load user activity data');
         console.error(err);
