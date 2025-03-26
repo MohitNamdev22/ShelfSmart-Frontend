@@ -4,7 +4,7 @@ import axios from 'axios';
 import Layout from '../components/Layout';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FiSearch, FiCalendar, FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiCalendar, FiDownload, FiEdit, FiTrash2, FiMinusCircle } from 'react-icons/fi';
 import Select from 'react-select';
 
 const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFormChange, handleFormSubmit, isSubmitting, suppliers }) => {
@@ -194,6 +194,65 @@ const DeleteModal = React.memo(({ isOpen, onClose, onConfirm, itemName, isDeleti
   );
 });
 
+// ConsumeModal
+const ConsumeModal = React.memo(({ isOpen, onClose, onConfirm, itemName, availableQuantity, consumeQuantity, setConsumeQuantity, isConsuming }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black opacity-50" onClick={onClose}></div>
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md z-50">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Consume Item</h2>
+        <p className="text-gray-500 mb-6">
+          Enter the quantity to consume for <span className="font-semibold">{itemName}</span> (Available: {availableQuantity})
+        </p>
+        <div className="mb-6">
+          <label className="block text-gray-700 mb-1">
+            Quantity to Consume <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            value={consumeQuantity}
+            onChange={(e) => setConsumeQuantity(e.target.value)}
+            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter quantity to consume"
+            min="1"
+            max={availableQuantity}
+            required
+            disabled={isConsuming}
+          />
+        </div>
+        <div className="flex space-x-4">
+          <button
+            onClick={onConfirm}
+            disabled={isConsuming}
+            className="flex-1 p-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-yellow-400 flex items-center justify-center"
+          >
+            {isConsuming ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Consuming...
+              </>
+            ) : (
+              'Consume'
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={isConsuming}
+            className="flex-1 p-3 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 const Inventory = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState({ name: 'Loading...', role: 'USER' });
@@ -206,9 +265,12 @@ const Inventory = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isConsumeModalOpen, setIsConsumeModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConsuming, setIsConsuming] = useState(false); 
   const [selectedItem, setSelectedItem] = useState(null);
+  const [consumeQuantity, setConsumeQuantity] = useState(''); 
   const itemsPerPage = 8;
 
   const [formData, setFormData] = useState({
@@ -292,6 +354,12 @@ const Inventory = () => {
     setIsDeleteModalOpen(true);
   }, []);
 
+  const handleConsume = useCallback((item) => {
+    setSelectedItem(item);
+    setConsumeQuantity(''); // Reset the quantity input
+    setIsConsumeModalOpen(true);
+  }, []);
+
   const confirmDelete = useCallback(async () => {
     if (!selectedItem) return;
     setIsDeleting(true);
@@ -311,6 +379,47 @@ const Inventory = () => {
       setIsDeleting(false);
     }
   }, [selectedItem, inventoryItems]);
+
+  const confirmConsume = useCallback(async () => {
+    if (!selectedItem) return;
+
+    const quantityToConsume = parseInt(consumeQuantity);
+    if (isNaN(quantityToConsume) || quantityToConsume <= 0) {
+      toast.error('Please enter a valid quantity to consume');
+      return;
+    }
+
+    if (quantityToConsume > selectedItem.quantity) {
+      toast.error('Cannot consume more than the available quantity');
+      return;
+    }
+
+    setIsConsuming(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:8080/inventory/${selectedItem.id}/consume`,
+        { quantity: quantityToConsume },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setInventoryItems(
+        inventoryItems.map((item) =>
+          item.id === selectedItem.id
+            ? { ...item, quantity: item.quantity - quantityToConsume }
+            : item
+        )
+      );
+      setIsConsumeModalOpen(false);
+      setSelectedItem(null);
+      setConsumeQuantity('');
+      toast.success('Item consumed successfully');
+    } catch (err) {
+      toast.error('Failed to consume item');
+      console.error(err);
+    } finally {
+      setIsConsuming(false);
+    }
+  }, [selectedItem, consumeQuantity, inventoryItems]);
 
   const handleFormChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -437,7 +546,6 @@ const Inventory = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
             </svg>
           </div>
-          
         </div>
 
         {/* Table Section */}
@@ -468,22 +576,33 @@ const Inventory = () => {
                     <td className="p-4 text-gray-800">{item.expiryDate}</td>
                     <td className="p-4 text-gray-800">{item.category}</td>
                     <td className="p-4 text-gray-800">{item.supplier ? item.supplier.name : 'N/A'}</td>
-                    {user.role === 'ADMIN' && (
-                      <td className="p-4 flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <FiEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </td>
-                    )}
+                    <td className="p-4 flex space-x-2">
+                      {user.role === 'ADMIN' && (
+                        <>
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="text-blue-600 hover:text-blue-800"
+                            disabled={isSubmitting || isDeleting || isConsuming}
+                          >
+                            <FiEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item)}
+                            className="text-red-600 hover:text-red-800"
+                            disabled={isSubmitting || isDeleting || isConsuming}
+                          >
+                            <FiTrash2 />
+                          </button>
+                          <button
+                            onClick={() => handleConsume(item)}
+                            className="text-yellow-600 hover:text-yellow-800"
+                            disabled={isSubmitting || isDeleting || isConsuming}
+                          >
+                            <FiMinusCircle />
+                          </button>
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -553,6 +672,19 @@ const Inventory = () => {
           onConfirm={confirmDelete}
           itemName={selectedItem?.name || ''}
           isDeleting={isDeleting}
+        />
+        <ConsumeModal
+          isOpen={isConsumeModalOpen}
+          onClose={() => {
+            setIsConsumeModalOpen(false);
+            setConsumeQuantity('');
+          }}
+          onConfirm={confirmConsume}
+          itemName={selectedItem?.name || ''}
+          availableQuantity={selectedItem?.quantity || 0}
+          consumeQuantity={consumeQuantity}
+          setConsumeQuantity={setConsumeQuantity}
+          isConsuming={isConsuming}
         />
       </div>
     </Layout>
