@@ -20,6 +20,7 @@ const Suppliers = () => {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contactInfo: '',
@@ -40,11 +41,36 @@ const Suppliers = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const TableSkeleton = () => (
+    <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-x-auto animate-pulse">
+      <div className="min-w-[600px]">
+        <div className="bg-gray-50 p-4">
+          <div className="grid grid-cols-5 gap-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-4 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="grid grid-cols-5 gap-4">
+              {[...Array(5)].map((_, j) => (
+                <div key={j} className="h-4 bg-gray-100 rounded"></div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     const fetchSuppliers = async () => {
+      setIsLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Not authenticated');
+        setIsLoading(false);
         return;
       }
 
@@ -62,6 +88,8 @@ const Suppliers = () => {
         setError('Failed to load suppliers');
         toast.error('Failed to load suppliers');
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchSuppliers();
@@ -246,7 +274,7 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
               <FiSearch className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             </div>
           </div>
-          {searchQuery && (
+          {searchQuery && !isLoading && (
             <p className="mt-2 text-xs sm:text-sm text-gray-600">
               Found {filteredSuppliers.length} supplier(s)
             </p>
@@ -255,6 +283,9 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
         
 
         {/* Suppliers Table */}
+        {isLoading ? (
+          <TableSkeleton/>
+        ): (
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-x-auto">
           <div className="min-w-[600px]"> {/* Minimum width for small screens */}
             <table className="w-full">
@@ -321,9 +352,10 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
             </table>
           </div>
         </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!isLoading && totalPages > 1 && (
           <div className="mt-4 sm:mt-6 flex justify-center items-center space-x-2">
             <button
               onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
