@@ -175,7 +175,7 @@ const Reports = () => {
         pauseOnHover
         theme="light"
       />
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 md:mt-14">
         <div className="mb-4 sm:mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Reports</h2>
           <p className="text-sm sm:text-base text-gray-500">View and manage your stock reports</p>
@@ -272,7 +272,6 @@ const Reports = () => {
         <div className="my-6">
           <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Custom Report</h3>
 
-          {/* Date Inputs - Stack on mobile */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
             <div className="relative flex-1">
               <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -326,9 +325,8 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Stock Movements Table - Horizontal scroll on mobile */}
         <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <div className="min-w-[600px]"> {/* Minimum width to prevent table from collapsing */}
+          <div className="min-w-[600px]">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 text-gray-600 text-left">
