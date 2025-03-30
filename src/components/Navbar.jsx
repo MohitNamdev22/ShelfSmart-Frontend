@@ -6,6 +6,7 @@ import axios from 'axios';
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  
   const [notifications, setNotifications] = useState({
     lowStock: [],
     expiringSoon: []
@@ -102,10 +103,10 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 h-[70px]">
       <div className="flex items-center justify-between p-4">
-        <Link to="/dashboard" className="flex items-center space-x-2">
-          <img src="icon.png" alt="ShelfSmart Icon" className="w-11 h-11" />
-          <span className="text-xl font-bold text-gray-800">ShelfSmart</span>
-        </Link>
+      <Link to="/dashboard" className="flex items-center space-x-2 md:ml-0 ml-8">
+        <img src="icon.png" alt="ShelfSmart Icon" className="w-11 h-11" />
+        <span className="text-xl font-bold text-gray-800 md:block hidden">ShelfSmart</span>
+      </Link>
 
         <div className="flex items-center space-x-4">
           <div className="relative">

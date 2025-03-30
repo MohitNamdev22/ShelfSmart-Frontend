@@ -39,7 +39,7 @@ const Sidebar = ({ userRole }) => {
     <>
       {/* Mobile Toggle Button */}
       <button
-        className="fixed top-4 left-4 z-20 md:hidden text-gray-600"
+        className="fixed top-6 left-4 z-20 md:hidden text-gray-600"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <HiX size={24} /> : <HiMenu size={24} />}
