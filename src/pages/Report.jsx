@@ -16,6 +16,7 @@ const Reports = () => {
   const [startDate, setStartDate] = useState('2024-07-22'); // Default start date
   const [endDate, setEndDate] = useState('2025-03-23'); // Default end date
   const [error, setError] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Initial load (daily/weekly)
   const [customLoading, setCustomLoading] = useState(false); // Custom report load
   const [isDownloading, setIsDownloading] = useState({
@@ -23,6 +24,16 @@ const Reports = () => {
     weekly: false,
     custom: false,
   });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch daily and weekly reports on component mount
   useEffect(() => {
@@ -164,131 +175,34 @@ const Reports = () => {
         pauseOnHover
         theme="light"
       />
-      <div className="p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Reports</h2>
-          <p className="text-gray-500">View and manage your stock reports</p>
+      <div className="p-4 sm:p-6">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Reports</h2>
+          <p className="text-sm sm:text-base text-gray-500">View and manage your stock reports</p>
         </div>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {error && <p className="text-red-500 mb-4 text-sm sm:text-base">{error}</p>}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6 flex items-center space-x-4">
-            <FiFileText className="text-blue-500 text-3xl" />
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <FiFileText className="text-blue-500 text-2xl sm:text-3xl" />
+
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-800">Daily Report</h3>
-              <p className="text-gray-500">Download the latest daily stock report</p>
-              <div className="flex items-center justify-between mt-4">
-                <button
-                  onClick={handleDailyReportDownload}
-                  disabled={isDownloading.daily || isLoading || dailyMovements.length === 0}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
-                >
-                  {isDownloading.daily ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Downloading...
-                    </>
-                  ) : (
-                    <>
-                      <FiDownload className="mr-2" />
-                      Download Report
-                    </>
-                  )}
-                </button>
-                <p className="text-gray-500 text-sm">
-                  Last generated: {isLoading ? 'Loading...' : dailyMovements.length > 0 ? dailyLatestTimestamp : 'No data'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6 flex items-center space-x-4">
-            <FiFileText className="text-blue-500 text-3xl" />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800">Weekly Report</h3>
-              <p className="text-gray-500">Download the comprehensive weekly report</p>
-              <div className="flex items-center justify-between mt-4">
-                <button
-                  onClick={handleWeeklyReportDownload}
-                  disabled={isDownloading.weekly || isLoading || weeklyMovements.length === 0}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
-                >
-                  {isDownloading.weekly ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Downloading...
-                    </>
-                  ) : (
-                    <>
-                      <FiDownload className="mr-2" />
-                      Download Report
-                    </>
-                  )}
-                </button>
-                <p className="text-gray-500 text-sm">
-                  Last generated: {isLoading ? 'Loading...' : weeklyMovements.length > 0 ? weeklyLatestTimestamp : 'No data'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Report Section */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Custom Report</h3>
-          <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-4">
-            <div className="relative mb-4 md:mb-0">
-              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="pl-10 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="relative mb-4 md:mb-0">
-              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="pl-10 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-0">
+                Last generated: {isLoading ? 'Loading...' : dailyMovements.length > 0 ? dailyLatestTimestamp : 'No data'}
+              </p>
             </div>
             <button
-              onClick={handleCustomReportDownload}
-              disabled={isDownloading.custom || customLoading || customMovements.length === 0}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+              onClick={handleDailyReportDownload}
+              disabled={isDownloading.daily || isLoading || dailyMovements.length === 0}
+              className="flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 text-sm sm:text-base"
             >
-              {isDownloading.custom ? (
+              {isDownloading.daily ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -300,94 +214,199 @@ const Reports = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Downloading...
+                  {isMobile ? 'Downloading' : 'Downloading...'}
                 </>
               ) : (
                 <>
-                  <FiDownload className="mr-2" />
-                  Download Custom Report
+                  <FiDownload className="mr-1 sm:mr-2" />
+                  {isMobile ? 'Download' : 'Download Report'}
+                </>
+              )}
+            </button>
+          </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <FiFileText className="text-blue-500 text-2xl sm:text-3xl" />
+              <div className="flex-1">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800">Weekly Report</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-0">
+                  Last generated: {isLoading ? 'Loading...' : weeklyMovements.length > 0 ? weeklyLatestTimestamp : 'No data'}
+                </p>
+              </div>
+              <button
+                onClick={handleWeeklyReportDownload}
+                disabled={isDownloading.weekly || isLoading || weeklyMovements.length === 0}
+                className="flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 text-sm sm:text-base"
+              >
+                {isDownloading.weekly ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    {isMobile ? 'Downloading' : 'Downloading...'}
+                  </>
+                ) : (
+                  <>
+                    <FiDownload className="mr-1 sm:mr-2" />
+                    {isMobile ? 'Download' : 'Download Report'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Report Section */}
+        <div className="my-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Custom Report</h3>
+
+          {/* Date Inputs - Stack on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
+            <div className="relative flex-1">
+              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              />
+            </div>
+
+            <div className="relative flex-1">
+              <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              />
+            </div>
+
+            <button
+              onClick={handleCustomReportDownload}
+              disabled={isDownloading.custom || customLoading || customMovements.length === 0}
+              className="flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 text-sm sm:text-base"
+            >
+              {isDownloading.custom ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  {isMobile ? 'Downloading' : 'Downloading...'}
+                </>
+              ) : (
+                <>
+                  <FiDownload className="mr-1 sm:mr-2" />
+                  {isMobile ? 'Download' : 'Download Custom Report'}
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* Stock Movements Table */}
-        <div className="bg-white rounded-lg shadow">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-gray-600 text-left">
-                <th className="p-4">Movement ID</th>
-                <th className="p-4">Item Name</th>
-                <th className="p-4">Quantity Changed</th>
-                <th className="p-4">Movement Type</th>
-                <th className="p-4">Timestamp</th>
-                <th className="p-4">Item ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan="6" className="p-4 text-center">
-                    <div className="flex justify-center items-center">
-                      <svg
-                        className="animate-spin h-5 w-5 mr-3 text-blue-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Loading...
-                    </div>
-                  </td>
+        {/* Stock Movements Table - Horizontal scroll on mobile */}
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <div className="min-w-[600px]"> {/* Minimum width to prevent table from collapsing */}
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 text-gray-600 text-left">
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Movement ID</th>
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Item Name</th>
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Qty Changed</th>
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Type</th>
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Timestamp</th>
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Item ID</th>
                 </tr>
-              ) : customLoading ? (
-                <tr>
-                  <td colSpan="6" className="p-4 text-center">
-                    <div className="flex justify-center items-center">
-                      <svg
-                        className="animate-spin h-5 w-5 mr-3 text-blue-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Fetching custom report...
-                    </div>
-                  </td>
-                </tr>
-              ) : customMovements.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="p-4 text-center text-gray-500">
-                    No movements found for the selected date range
-                  </td>
-                </tr>
-              ) : (
-                customMovements.map((movement) => (
-                  <tr key={movement.MovementId} className="border-t">
-                    <td className="p-4 text-gray-800">{movement.MovementId}</td>
-                    <td className="p-4 text-gray-800">{movement.ItemName}</td>
-                    <td className="p-4 text-gray-800">{movement.QuantityChanged}</td>
-                    <td className="p-4 text-gray-800">{movement.MovementType}</td>
-                    <td className="p-4 text-gray-800">{new Date(movement.Timestamp).toLocaleString()}</td>
-                    <td className="p-4 text-gray-800">{movement.ItemId}</td>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center">
+                      <div className="flex justify-center items-center">
+                        <svg
+                          className="animate-spin h-5 w-5 mr-3 text-blue-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Loading...
+                      </div>
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : customLoading ? (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center">
+                      <div className="flex justify-center items-center">
+                        <svg
+                          className="animate-spin h-5 w-5 mr-3 text-blue-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Fetching custom report...
+                      </div>
+                    </td>
+                  </tr>
+                ) : customMovements.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center text-gray-500 text-sm sm:text-base">
+                      No movements found for the selected date range
+                    </td>
+                  </tr>
+                ) : (
+                  customMovements.map((movement) => (
+                    <tr key={movement.MovementId} className="border-t hover:bg-gray-50">
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{movement.MovementId}</td>
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{movement.ItemName}</td>
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{movement.QuantityChanged}</td>
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{movement.MovementType}</td>
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">
+                        {new Date(movement.Timestamp).toLocaleDateString()}
+                      </td>
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{movement.ItemId}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
         </div>
       </div>
     </Layout>
