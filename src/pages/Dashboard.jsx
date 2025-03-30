@@ -265,18 +265,20 @@ const Dashboard = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
             <div className="flex items-center">
               <div className="p-3 bg-blue-50 rounded-lg">
                 <FiPackage className="w-6 h-6 text-blue-500" />
               </div>
               <div className="ml-4">
-                <p className="text-4xl font-bold text-gray-800">{stats.totalItems}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.totalItems}</p>
                 <p className="text-sm text-gray-500 mt-1">Total Items</p>
               </div>
             </div>
           </div>
+
+          
 
           <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
             <div className="flex items-center">
@@ -284,7 +286,7 @@ const Dashboard = () => {
                 <FiAlertCircle className="w-6 h-6 text-red-500" />
               </div>
               <div className="ml-4">
-                <p className="text-4xl font-bold text-gray-800">{stats.lowStockItems}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.lowStockItems}</p>
                 <p className="text-sm text-gray-500 mt-1">Low Stock Items</p>
               </div>
             </div>
@@ -296,18 +298,20 @@ const Dashboard = () => {
                 <FiClock className="w-6 h-6 text-yellow-500" />
               </div>
               <div className="ml-4">
-                <p className="text-4xl font-bold text-gray-800">{stats.expiringSoon}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.expiringSoon}</p>
                 <p className="text-sm text-gray-500 mt-1">Expiring Soon</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 mb-6 sm:mb-8">
           {/* Donut Chart */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Stock Levels Overview</h3>
-            <div className="h-64">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
+    <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Stock Levels</h3>
+            <div className="h-[250px] sm:h-[300px] min-h-[200px] w-full">
               <Doughnut
                 data={stockLevelsData}
                 options={{
@@ -323,9 +327,9 @@ const Dashboard = () => {
           </div>
 
           {/* Line Chart */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Stock Movement Trends (Last 30 Days)</h3>
-            <div className="h-64">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Stock Movement Trends (Last 30 Days)</h3>
+            <div className="h-[250px] sm:h-[300px] min-h-[200px] w-full">
               <Line
                 data={getMovementTrendsData()}
                 options={{
@@ -346,9 +350,9 @@ const Dashboard = () => {
         </div>
 
         {/* Bar Chart */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Top 5 Consumed Items (Last 30 Days)</h3>
-          <div className="h-64">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Top 5 Consumed Items (Last 30 Days)</h3>
+          <div className="h-[250px] sm:h-[300px] min-h-[200px] w-full">
             <Bar
               data={getTopConsumedItemsData()}
               options={{
@@ -359,7 +363,10 @@ const Dashboard = () => {
                   y: { title: { display: true, text: 'Units Consumed' } },
                 },
                 plugins: {
-                  legend: { display: false },
+                  legend: { 
+                    position: window.innerWidth < 640 ? 'top' : 'bottom',
+                    labels: { padding: 10 }
+                  },
                   tooltip: { callbacks: { label: (context) => `${context.label}: ${context.raw} units` } },
                 },
               }}
@@ -368,39 +375,39 @@ const Dashboard = () => {
         </div>
 
         {/* Low Stock and Expiring Soon Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              <FiAlertCircle className="w-5 h-5 text-red-500 mr-2" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 mt-5">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+      <FiAlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mr-2" />
               Low Stock Items
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {lowStockItems.length === 0 ? (
                 <p className="text-gray-500">No low stock items</p>
               ) : (
-                lowStockItems.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                lowStockItems.map((item) => (
+                  <div key={item.id} className="flex flex-col xs:flex-row xs:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg gap-2">
                     <div>
-                      <p className="font-medium text-gray-800">{item.name}</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Quantity left: <span className="text-red-500 font-medium">{item.quantity}</span>
+                      <p className="font-medium text-gray-800 text-sm sm:text-base">{item.name}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">
+                        Left: <span className="text-red-500 font-medium">{item.quantity}</span>
                       </p>
                     </div>
                     {user.role === 'ADMIN' && (
-                      <button
-                        onClick={() => handleRestock(item.name)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                      >
-                        Restock
-                      </button>
-                    )}
+            <button 
+              onClick={() => handleRestock(item.name)}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-500 text-white rounded-md sm:rounded-lg hover:bg-blue-600"
+            >
+              Restock
+            </button>
+          )}
                   </div>
                 ))
               )}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
             <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
               <FiClock className="w-5 h-5 text-yellow-500 mr-2" />
               Expiring Soon
