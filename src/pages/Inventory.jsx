@@ -4,7 +4,7 @@ import axios from 'axios';
 import Layout from '../components/Layout';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FiSearch, FiCalendar, FiDownload, FiEdit, FiTrash2, FiMinusCircle, FiPlus } from 'react-icons/fi';
+import { FiSearch, FiCalendar, FiDownload, FiEdit, FiTrash2, FiMinusCircle, FiPlus, FiChevronDown } from 'react-icons/fi';
 import Select from 'react-select';
 
 const InventoryModal = React.memo(({ isOpen, onClose, isEdit, formData, handleFormChange, handleFormSubmit, isSubmitting, suppliers }) => {
@@ -257,7 +257,8 @@ const Inventory = () => {
   const [user, setUser] = useState({ name: 'Loading...', role: 'USER' });
   const [inventoryItems, setInventoryItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All Category'); // Update default value
+  const [categories, setCategories] = useState(['All Category']); // Add this line
   const [suppliers, setSuppliers] = useState([]);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -309,14 +310,37 @@ const Inventory = () => {
         if (userData) setUser(JSON.parse(userData));
 
         // Fetch inventory
-        const params = {};
-        if (searchQuery) params.name = searchQuery;
-        if (categoryFilter && categoryFilter !== 'All Category') params.category = categoryFilter;
-        const inventoryResponse = await axios.get('http://localhost:8080/inventory/search', {
-          headers: { Authorization: `Bearer ${token}` },
-          params,
-        });
-        setInventoryItems(inventoryResponse.data);
+        const params = new URLSearchParams();
+        if (searchQuery.trim()) {
+          params.append('name', searchQuery.trim());
+        }
+        if (categoryFilter && categoryFilter !== 'All Category') {
+          params.append('category', categoryFilter);
+        }
+
+        const inventoryResponse = await axios.get(
+          `http://localhost:8080/inventory/search?${params.toString()}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const sortedItems = inventoryResponse.data.sort((a, b) => 
+          a.name.localeCompare(b.name)
+        );
+
+        setInventoryItems(sortedItems);
+        setCurrentPage(1);
+
+        if (!searchQuery && !categoryFilter) {
+          const uniqueCategories = ['All Category', 
+            ...new Set(inventoryResponse.data
+              .map(item => item.category)
+              .filter(Boolean)
+            )
+          ].sort();
+          setCategories(uniqueCategories);
+        }
 
         // Fetch suppliers
         if (user.role === 'ADMIN') {
@@ -336,11 +360,40 @@ const Inventory = () => {
         console.error(err);
       }
     };
-    fetchData();
+    const timeoutId = setTimeout(() => {
+      fetchData();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+
   }, [searchQuery, categoryFilter, navigate, user.role]);
 
-  const handleSearch = useCallback((e) => setSearchQuery(e.target.value), []);
-  const handleCategoryChange = useCallback((e) => setCategoryFilter(e.target.value), []);
+const handleSearch = useCallback((e) => {
+  const value = e.target.value;
+  setSearchQuery(value);
+}, []);
+
+const handleCategoryChange = useCallback((e) => {
+  const value = e.target.value;
+  setCategoryFilter(value);
+}, []);
+
+const SearchStatus = () => {
+  if (!searchQuery && categoryFilter === 'All Category') return null;
+
+  return (
+    <div className="mb-4 text-sm text-gray-600">
+      {inventoryItems.length === 0 ? (
+        <p>No items found for your search</p>
+      ) : (
+        <p>
+          Found {inventoryItems.length} item(s)
+          {searchQuery && ` matching "${searchQuery}"`}
+          {categoryFilter !== 'All Category' && ` in category "${categoryFilter}"`}
+        </p>
+      )}
+    </div>
+  );
+};
 
   const handleAddItem = useCallback(() => {
     setFormData({
@@ -507,7 +560,6 @@ const Inventory = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentItems = inventoryItems.slice(startIndex, startIndex + itemsPerPage);
 
-  const categories = ['All Category', ...new Set(inventoryItems.map(item => item.category).filter(Boolean))];
 
 
   
@@ -519,7 +571,7 @@ const Inventory = () => {
   return (
     <Layout userName={user.name} userRole={user.role}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="light" />
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 md:mt-14">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Inventory Management</h2>
           {user.role === 'ADMIN' && (
@@ -537,36 +589,33 @@ const Inventory = () => {
 
         {/* Filters Section */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearch}
-              placeholder="Search items..."
-              className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-            />
-          </div>
-          <div className="relative mb-4 md:mb-0">
-            <select
-              value={categoryFilter}
-              onChange={handleCategoryChange}
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm sm:text-base"
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            <svg
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+  <div className="relative flex-1">
+    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+    <input
+      type="text"
+      value={searchQuery}
+      onChange={handleSearch}
+      placeholder="Search items by name..."
+      className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+    />
+  </div>
+  <div className="relative w-full sm:w-48">
+    <select
+      value={categoryFilter}
+      onChange={handleCategoryChange}
+      className="w-full p-2 pl-3 pr-8 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm sm:text-base"
+    >
+      {categories.map(category => (
+        <option key={category} value={category}>
+          {category}
+        </option>
+      ))}
+    </select>
+    <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+  </div>
+</div>
+
+<SearchStatus/>
 
         {/* Table Section */}
         {isMobile ? (
