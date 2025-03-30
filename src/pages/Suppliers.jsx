@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Layout from '../components/Layout';
-import { FiUsers, FiEdit, FiTrash2, FiPlus } from 'react-icons/fi';
+import { FiUsers, FiEdit, FiTrash2, FiPlus, FiSearch, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -19,6 +19,7 @@ const Suppliers = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contactInfo: '',
@@ -28,6 +29,16 @@ const Suppliers = () => {
   const [isAdding, setIsAdding] = useState(false); 
   const [isEditing, setIsEditing] = useState(false); 
   const [isDeleting, setIsDeleting] = useState(false); 
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -166,28 +177,26 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
   return (
     <Layout userName={user.name} userRole={user.role}>
       <ToastContainer position="top-right" autoClose={3000} />
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Suppliers Management</h2>
-          <p className="text-gray-500">View and manage your suppliers</p>
-        </div>
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto md:mt-14">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+        <div className="">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Suppliers Management</h2>
+            <p className="text-sm sm:text-base text-gray-500">View and manage your suppliers</p>
+          </div>
           {user.role === 'ADMIN' && (
-          <div className="mb-6">
             <button
               onClick={() => setIsAddModalOpen(true)}
               disabled={isAdding}
-              className={`flex items-center px-4 py-2 rounded-lg ${
+              className={`flex items-center px-3 py-2 sm:px-4 sm:py-2 rounded-lg ${
                 isAdding
                   ? 'bg-blue-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
-              } text-white`}
+              } text-white text-sm sm:text-base`}
             >
               {isAdding ? (
                 <>
                   <svg
-                    className="animate-spin h-5 w-5 mr-2 text-white"
+                    className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-2 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -206,130 +215,169 @@ const currentSuppliers = filteredSuppliers.slice(indexOfFirstItem, indexOfLastIt
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  Adding...
+                  {isMobile ? 'Adding' : 'Adding...'}
                 </>
               ) : (
                 <>
-                  <FiPlus className="mr-2" />
-                  Add Supplier
+                  <FiPlus className="mr-1 sm:mr-2" />
+                  {isMobile ? 'Add' : 'Add Supplier'}
                 </>
               )}
             </button>
-          </div>
-        )}
+          )}
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm sm:text-base">
             {error}
           </div>
         )}
 
-<div className="mb-6">
+<div className="mb-4 sm:mb-6">
   <div className="relative">
     <input
       type="text"
       placeholder="Search suppliers by name, email or contact..."
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
-      className="w-full md:w-96 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        />
-      </svg>
-    </div>
-  </div>
-  {searchQuery && (
-    <p className="mt-2 text-sm text-gray-600">
-      Found {filteredSuppliers.length} supplier(s) matching your search
-    </p>
-  )}
-</div>
+      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiSearch className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+            </div>
+          </div>
+          {searchQuery && (
+            <p className="mt-2 text-xs sm:text-sm text-gray-600">
+              Found {filteredSuppliers.length} supplier(s)
+            </p>
+          )}
+        </div>
         
 
         {/* Suppliers Table */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-gray-600 text-left">
-                <th className="p-4">ID</th>
-                <th className="p-4">Name</th>
-                <th className="p-4">Contact Info</th>
-                <th className="p-4">Email</th>
-                <th className="p-4">Address</th>
-                {user.role === 'ADMIN' && <th className="p-4">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {currentSuppliers.length === 0 ? (
-                <tr>
-                  <td colSpan={user.role === 'ADMIN' ? 6 : 5} className="p-4 text-center text-gray-500">
-                    No suppliers found
-                  </td>
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-x-auto">
+          <div className="min-w-[600px]"> {/* Minimum width for small screens */}
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 text-gray-600 text-left">
+                  {!isMobile && <th className="p-3 sm:p-4 text-xs sm:text-sm">ID</th>}
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Name</th>
+                  <th className="p-3 sm:p-4 text-xs sm:text-sm">Contact</th>
+                  {!isMobile && <th className="p-3 sm:p-4 text-xs sm:text-sm">Email</th>}
+                  {!isMobile && <th className="p-3 sm:p-4 text-xs sm:text-sm">Address</th>}
+                  {user.role === 'ADMIN' && <th className="p-3 sm:p-4 text-xs sm:text-sm">Actions</th>}
                 </tr>
-              ) : (
-                currentSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="border-t">
-                    <td className="p-4 text-gray-800">{supplier.id}</td>
-                    <td className="p-4 text-gray-800">{supplier.name}</td>
-                    <td className="p-4 text-gray-800">{supplier.contactInfo}</td>
-                    <td className="p-4 text-gray-800">{supplier.email}</td>
-                    <td className="p-4 text-gray-800">{supplier.address}</td>
-                    {user.role === 'ADMIN' && (
-                      <td className="p-4 text-gray-800 flex space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedSupplier(supplier);
-                            setIsEditModalOpen(true);
-                          }}
-                          className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
-                          disabled={isEditing || isDeleting}
-                        >
-                          <FiEdit />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedSupplier(supplier);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                          disabled={isEditing || isDeleting}
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </td>
-                    )}
+              </thead>
+              <tbody>
+                {currentSuppliers.length === 0 ? (
+                  <tr>
+                    <td 
+                      colSpan={isMobile ? (user.role === 'ADMIN' ? 3 : 2) : (user.role === 'ADMIN' ? 6 : 5)} 
+                      className="p-4 text-center text-gray-500 text-sm sm:text-base"
+                    >
+                      No suppliers found
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  currentSuppliers.map((supplier) => (
+                    <tr key={supplier.id} className="border-t hover:bg-gray-50">
+                      {!isMobile && <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{supplier.id}</td>}
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{supplier.name}</td>
+                      <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{supplier.contactInfo}</td>
+                      {!isMobile && <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{supplier.email}</td>}
+                      {!isMobile && <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">{supplier.address}</td>}
+                      {user.role === 'ADMIN' && (
+                        <td className="p-3 sm:p-4 text-gray-800 text-xs sm:text-sm">
+                          <div className="flex space-x-1 sm:space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedSupplier(supplier);
+                                setIsEditModalOpen(true);
+                              }}
+                              className="p-1 sm:p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"
+                              disabled={isEditing || isDeleting}
+                              title="Edit"
+                            >
+                              <FiEdit className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedSupplier(supplier);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              className="p-1 sm:p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                              disabled={isEditing || isDeleting}
+                              title="Delete"
+                            >
+                              <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-6 flex justify-center space-x-2">
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`px-4 py-2 rounded-lg ${
-                  currentPage === page
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+          <div className="mt-4 sm:mt-6 flex justify-center items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+            >
+              <FiChevronLeft />
+            </button>
+            
+            {!isMobile && (
+              Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })
+            )}
+
+            {isMobile && (
+              <span className="px-3 py-1 bg-gray-100 rounded-lg text-xs sm:text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+            )}
+
+            <button
+              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+            >
+              <FiChevronRight />
+            </button>
           </div>
         )}
+
 
         {/* Add Modal */}
         {isAddModalOpen && (
