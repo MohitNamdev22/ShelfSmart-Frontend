@@ -248,7 +248,7 @@ const Dashboard = () => {
   return (
     <Layout userName={user.name} userRole={user.role}>
       <ToastContainer position="top-right" autoClose={3000} />
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6 max-w-7xl mx-auto md:mt-14">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 mb-8 text-white">
           <h2 className="text-3xl font-bold">
             Welcome back, {user.name}
