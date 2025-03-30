@@ -272,6 +272,8 @@ const Inventory = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [consumeQuantity, setConsumeQuantity] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   const itemsPerPage = isMobile ? 4 : 8;
 
@@ -296,6 +298,7 @@ const Inventory = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         toast.error('Not authenticated');
@@ -358,6 +361,8 @@ const Inventory = () => {
         setError('Failed to load inventory');
         toast.error('Failed to load inventory');
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
     const timeoutId = setTimeout(() => {
@@ -366,6 +371,36 @@ const Inventory = () => {
     return () => clearTimeout(timeoutId);
 
   }, [searchQuery, categoryFilter, navigate, user.role]);
+
+const TableSkeleton = () => (
+  <div className="bg-white rounded-lg shadow overflow-x-auto mb-6 animate-pulse">
+    <div className="p-4 space-y-3">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex space-x-4">
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const CardSkeleton = () => (
+  <div className="grid grid-cols-1 gap-4 mb-6">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
+        <div className="space-y-3">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 const handleSearch = useCallback((e) => {
   const value = e.target.value;
@@ -378,6 +413,7 @@ const handleCategoryChange = useCallback((e) => {
 }, []);
 
 const SearchStatus = () => {
+  if (isLoading) return null;
   if (!searchQuery && categoryFilter === 'All Category') return null;
 
   return (
@@ -618,7 +654,11 @@ const SearchStatus = () => {
 <SearchStatus/>
 
         {/* Table Section */}
-        {isMobile ? (
+        
+        {isLoading ? (
+  isMobile ? <CardSkeleton /> : <TableSkeleton />
+) : (
+  isMobile ? (
           <div className="grid grid-cols-1 gap-4 mb-6">
             {currentItems.length === 0 ? (
               <div className="p-4 text-center text-gray-500 bg-white rounded-lg shadow">
@@ -740,7 +780,8 @@ const SearchStatus = () => {
               </tbody>
             </table>
           </div>
-        )}
+        )
+      )}
 
         {/* Pagination Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
