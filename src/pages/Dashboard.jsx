@@ -1,4 +1,3 @@
-// Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Layout from '../components/Layout';
@@ -17,14 +16,6 @@ defaults.font.family = 'Inter';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('Please login to access the dashboard');
-      navigate('/login');
-      return;
-    }
-  }, [navigate]);
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('userData');
     return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };
@@ -33,22 +24,36 @@ const Dashboard = () => {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [expiringItems, setExpiringItems] = useState([]);
   const [suggestions, setSuggestions] = useState({});
-  const [stockMovements, setStockMovements] = useState([]); 
+  const [stockMovements, setStockMovements] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Not authenticated');
-        return;
-      }
-
-      try {
-        const userData = localStorage.getItem('userData');
-        if (userData) {
-          setUser(JSON.parse(userData));
+    const interval = setInterval(() => {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        if (parsedUser.name !== user.name || parsedUser.role !== user.role) {
+          setUser(parsedUser);
         }
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      toast.error('Please login to access the dashboard');
+      navigate('/login');
+      return;
+    }
+
+
+    const fetchData = async () => {
+      
+      try {
 
         // Total Items
         const inventoryResponse = await axios.get('http://localhost:8080/inventory', {
@@ -106,7 +111,7 @@ const Dashboard = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [navigate]);
 
   const handleRestock = async (itemName) => {
     try {

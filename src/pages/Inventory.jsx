@@ -268,9 +268,9 @@ const Inventory = () => {
   const [isConsumeModalOpen, setIsConsumeModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isConsuming, setIsConsuming] = useState(false); 
+  const [isConsuming, setIsConsuming] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [consumeQuantity, setConsumeQuantity] = useState(''); 
+  const [consumeQuantity, setConsumeQuantity] = useState('');
   const itemsPerPage = 8;
 
   const [formData, setFormData] = useState({
@@ -279,7 +279,7 @@ const Inventory = () => {
     threshold: 0,
     expiryDate: '',
     category: '',
-    supplier: null 
+    supplier: null
   });
 
   useEffect(() => {
@@ -293,9 +293,9 @@ const Inventory = () => {
       }
 
       try {
-        // (placeholder data)
-        const userData = { name: 'John Doe', role: 'ADMIN' };
-        setUser(userData);
+
+        const userData = localStorage.getItem('userData');
+        if (userData) setUser(JSON.parse(userData));
 
         // Fetch inventory
         const params = {};
@@ -308,18 +308,25 @@ const Inventory = () => {
         setInventoryItems(inventoryResponse.data);
 
         // Fetch suppliers
-        const suppliersResponse = await axios.get('http://localhost:8080/suppliers', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSuppliers(suppliersResponse.data);
+        if (user.role === 'ADMIN') {
+          try {
+            const suppliersResponse = await axios.get('http://localhost:8080/suppliers', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setSuppliers(suppliersResponse.data);
+          } catch (err) {
+            toast.error('Failed to load suppliers');
+            console.error(err);
+          }
+        }
       } catch (err) {
-        setError('Failed to load data');
-        toast.error('Failed to load data');
+        setError('Failed to load inventory');
+        toast.error('Failed to load inventory');
         console.error(err);
       }
     };
     fetchData();
-  }, [searchQuery, categoryFilter, navigate]);
+  }, [searchQuery, categoryFilter, navigate, user.role]);
 
   const handleSearch = useCallback((e) => setSearchQuery(e.target.value), []);
   const handleCategoryChange = useCallback((e) => setCategoryFilter(e.target.value), []);
@@ -331,7 +338,7 @@ const Inventory = () => {
       threshold: 0,
       expiryDate: '',
       category: '',
-      supplier: suppliers.length > 0 ? { id: suppliers[0].id } : null 
+      supplier: suppliers.length > 0 ? { id: suppliers[0].id } : null
     });
     setIsAddModalOpen(true);
   }, [suppliers]);
@@ -356,7 +363,7 @@ const Inventory = () => {
 
   const handleConsume = useCallback((item) => {
     setSelectedItem(item);
-    setConsumeQuantity(''); // Reset the quantity input
+    setConsumeQuantity('');
     setIsConsumeModalOpen(true);
   }, []);
 
@@ -375,6 +382,7 @@ const Inventory = () => {
       toast.success('Item deleted successfully');
     } catch (err) {
       toast.error('Failed to delete item');
+      console.error(err);
     } finally {
       setIsDeleting(false);
     }
@@ -583,6 +591,7 @@ const Inventory = () => {
                             onClick={() => handleEdit(item)}
                             className="text-blue-600 hover:text-blue-800"
                             disabled={isSubmitting || isDeleting || isConsuming}
+                            title="Edit"
                           >
                             <FiEdit />
                           </button>
@@ -593,15 +602,15 @@ const Inventory = () => {
                           >
                             <FiTrash2 />
                           </button>
-                          <button
-                            onClick={() => handleConsume(item)}
-                            className="text-yellow-600 hover:text-yellow-800"
-                            disabled={isSubmitting || isDeleting || isConsuming}
-                          >
-                            <FiMinusCircle />
-                          </button>
                         </>
                       )}
+                      <button
+                        onClick={() => handleConsume(item)}
+                        className="text-yellow-600 hover:text-yellow-800"
+                        disabled={isSubmitting || isDeleting || isConsuming}
+                      >
+                        <FiMinusCircle />
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -628,9 +637,8 @@ const Inventory = () => {
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-4 py-2 border rounded-lg ${
-                  currentPage === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`px-4 py-2 border rounded-lg ${currentPage === page ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
               >
                 {page}
               </button>
@@ -645,34 +653,39 @@ const Inventory = () => {
           </div>
         </div>
 
-        {/* Modals */}
-        <InventoryModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          isEdit={false}
-          formData={formData}
-          handleFormChange={handleFormChange}
-          handleFormSubmit={handleFormSubmit}
-          isSubmitting={isSubmitting}
-          suppliers={suppliers}
-        />
-        <InventoryModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          isEdit={true}
-          formData={formData}
-          handleFormChange={handleFormChange}
-          handleFormSubmit={handleFormSubmit}
-          isSubmitting={isSubmitting}
-          suppliers={suppliers}
-        />
-        <DeleteModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={confirmDelete}
-          itemName={selectedItem?.name || ''}
-          isDeleting={isDeleting}
-        />
+        {user.role === 'ADMIN' && (
+          <>
+            {/* Modals */}
+            <InventoryModal
+              isOpen={isAddModalOpen}
+              onClose={() => setIsAddModalOpen(false)}
+              isEdit={false}
+              formData={formData}
+              handleFormChange={handleFormChange}
+              handleFormSubmit={handleFormSubmit}
+              isSubmitting={isSubmitting}
+              suppliers={suppliers}
+            />
+            <InventoryModal
+              isOpen={isEditModalOpen}
+              onClose={() => setIsEditModalOpen(false)}
+              isEdit={true}
+              formData={formData}
+              handleFormChange={handleFormChange}
+              handleFormSubmit={handleFormSubmit}
+              isSubmitting={isSubmitting}
+              suppliers={suppliers}
+            />
+            <DeleteModal
+              isOpen={isDeleteModalOpen}
+              onClose={() => setIsDeleteModalOpen(false)}
+              onConfirm={confirmDelete}
+              itemName={selectedItem?.name || ''}
+              isDeleting={isDeleting}
+            />
+
+          </>
+        )}
         <ConsumeModal
           isOpen={isConsumeModalOpen}
           onClose={() => {
@@ -686,6 +699,7 @@ const Inventory = () => {
           setConsumeQuantity={setConsumeQuantity}
           isConsuming={isConsuming}
         />
+
       </div>
     </Layout>
   );
