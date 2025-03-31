@@ -28,7 +28,6 @@ const Layout = ({ userName, userRole, children }) => {
         onClose={() => setSidebarOpen(false)} 
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Navbar */}
         <Navbar 

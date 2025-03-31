@@ -1,9 +1,7 @@
-// AIInventorySuggestions.jsx
 import React, { useState } from 'react';
 import { FiAlertCircle, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 const AIInventorySuggestions = ({ suggestions }) => {
-  // State to manage which accordion sections are open
   const [openSections, setOpenSections] = useState({
     'High Urgency': false,
     'Medium Urgency': false,
@@ -11,10 +9,8 @@ const AIInventorySuggestions = ({ suggestions }) => {
     'Additional Notes': false,
   });
 
-  // State to manage which items are expanded to show their descriptions
   const [expandedItems, setExpandedItems] = useState({});
 
-  // Toggle accordion section
   const toggleSection = (category) => {
     setOpenSections((prev) => ({
       ...prev,
@@ -22,7 +18,6 @@ const AIInventorySuggestions = ({ suggestions }) => {
     }));
   };
 
-  // Toggle item description
   const toggleItem = (category, index) => {
     setExpandedItems((prev) => ({
       ...prev,
@@ -44,7 +39,6 @@ const AIInventorySuggestions = ({ suggestions }) => {
           {['High Urgency', 'Medium Urgency', 'Low Urgency'].map((category) => (
             suggestions[category]?.length > 0 && (
               <div key={category} className="mb-4">
-                {/* Accordion Header */}
                 <button
                   onClick={() => toggleSection(category)}
                   className="w-full flex justify-between items-center py-2"
@@ -67,7 +61,6 @@ const AIInventorySuggestions = ({ suggestions }) => {
                   )}
                 </button>
 
-                {/* Accordion Content */}
                 {openSections[category] && (
                   <div className="pl-5">
                     {suggestions[category].map((suggestion, index) => (
@@ -100,7 +93,6 @@ const AIInventorySuggestions = ({ suggestions }) => {
 
           {suggestions['Considerations']?.length > 0 && (
             <div>
-              {/* Accordion Header for Additional Notes */}
               <button
                 onClick={() => toggleSection('Additional Notes')}
                 className="w-full flex justify-between items-center py-2"
@@ -113,7 +105,6 @@ const AIInventorySuggestions = ({ suggestions }) => {
                 )}
               </button>
 
-              {/* Accordion Content for Additional Notes */}
               {openSections['Additional Notes'] && (
                 <div className="pl-5">
                   {suggestions['Considerations'].map((note, index) => (
