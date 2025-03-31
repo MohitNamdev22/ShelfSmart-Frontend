@@ -13,6 +13,30 @@ const UserActivity = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const ActivityTableSkeleton = () => (
+    <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-x-auto animate-pulse">
+      <div className="min-w-[600px]">
+        <div className="bg-gray-50 p-4">
+          <div className="grid grid-cols-6 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-4 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="grid grid-cols-6 gap-4">
+              {[...Array(6)].map((_, j) => (
+                <div key={j} className="h-4 bg-gray-100 rounded"></div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -26,9 +50,12 @@ const UserActivity = () => {
 
   useEffect(() => {
     const fetchActivities = async () => {
+
+      setIsLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Not authenticated');
+        setIsLoading(false);
         return;
       }
 
@@ -50,6 +77,8 @@ const UserActivity = () => {
       } catch (err) {
         setError('Failed to load user activity data');
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchActivities();
@@ -102,7 +131,10 @@ const UserActivity = () => {
           </div>
         )}
 
-        {/* Activity Table */}
+        {isLoading ? (
+          <ActivityTableSkeleton/>
+        ):(
+
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-x-auto">
           <div className="min-w-[600px]">
             <table className="w-full">
@@ -161,9 +193,10 @@ const UserActivity = () => {
             </table>
           </div>
         </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!isLoading && totalPages > 1 && (
           <div className="mt-4 sm:mt-6 flex justify-center items-center space-x-2">
             <button
               onClick={() => handlePageChange(Math.max(1, currentPage - 1))}

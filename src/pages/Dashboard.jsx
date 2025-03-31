@@ -10,12 +10,14 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, BarElement,
 import { Doughnut, Line, Bar } from 'react-chartjs-2';
 import Papa from 'papaparse';
 import { defaults } from 'chart.js';
+import { Skeleton } from '../components/Skeleton';
 
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement);
 defaults.font.family = 'Inter';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('userData');
     return userData ? JSON.parse(userData) : { name: 'Loading...', role: 'USER' };
@@ -41,77 +43,147 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token');
+
+  //   if (!token) {
+  //     toast.error('Please login to access the dashboard');
+  //     navigate('/login');
+  //     return;
+  //   }
+
+
+  //   const fetchData = async () => {
+
+  //     try {
+
+  //       // Total Items
+  //       const inventoryResponse = await axios.get('http://localhost:8080/inventory', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       setStats((prev) => ({ ...prev, totalItems: inventoryResponse.data.length }));
+
+  //       // Low Stock Items
+  //       const lowStockResponse = await axios.get('http://localhost:8080/inventory/low-stock', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       setLowStockItems(
+  //         lowStockResponse.data.map((item) => ({
+  //           id: item.id,
+  //           name: item.name,
+  //           quantity: `${item.quantity} units`,
+  //           status: 'Low Stock',
+  //         }))
+  //       );
+  //       setStats((prev) => ({ ...prev, lowStockItems: lowStockResponse.data.length }));
+
+  //       const expiryResponse = await axios.get('http://localhost:8080/alerts/expiry', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       setExpiringItems(
+  //         expiryResponse.data.map((item) => ({
+  //           name: item.name,
+  //           expiry: item.expiryDate,
+  //           status: 'Expiring',
+  //         }))
+  //       );
+  //       setStats((prev) => ({ ...prev, expiringSoon: expiryResponse.data.length }));
+
+  //       const suggestionsResponse = await axios.get('http://localhost:8080/inventory/suggestions', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       setSuggestions(suggestionsResponse.data);
+
+  //       // Stock Movements (Last 30 Days)
+  //       const endDate = new Date().toISOString().split('T')[0]; 
+  //       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  //       const movementsResponse = await axios.get('http://localhost:8080/reports/custom', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //         params: { startDate, endDate },
+  //       });
+
+  //       const parsedData = Papa.parse(movementsResponse.data, {
+  //         header: true,
+  //         skipEmptyLines: true,
+  //       });
+  //       setStockMovements(parsedData.data || []);
+  //     } catch (err) {
+  //       setError('Failed to load dashboard data');
+  //       toast.error('Failed to load dashboard data');
+  //     }
+  //   };
+  //   fetchData();
+  // }, [navigate]);
+
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      toast.error('Please login to access the dashboard');
-      navigate('/login');
-      return;
-    }
-
-
     const fetchData = async () => {
-      
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
 
-        // Total Items
-        const inventoryResponse = await axios.get('http://localhost:8080/inventory', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setStats((prev) => ({ ...prev, totalItems: inventoryResponse.data.length }));
-
-        // Low Stock Items
-        const lowStockResponse = await axios.get('http://localhost:8080/inventory/low-stock', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setLowStockItems(
-          lowStockResponse.data.map((item) => ({
-            id: item.id,
-            name: item.name,
-            quantity: `${item.quantity} units`,
-            status: 'Low Stock',
-          }))
-        );
-        setStats((prev) => ({ ...prev, lowStockItems: lowStockResponse.data.length }));
-
-        const expiryResponse = await axios.get('http://localhost:8080/alerts/expiry', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setExpiringItems(
-          expiryResponse.data.map((item) => ({
-            name: item.name,
-            expiry: item.expiryDate,
-            status: 'Expiring',
-          }))
-        );
-        setStats((prev) => ({ ...prev, expiringSoon: expiryResponse.data.length }));
-
-        const suggestionsResponse = await axios.get('http://localhost:8080/inventory/suggestions', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setSuggestions(suggestionsResponse.data);
-
-        // Stock Movements (Last 30 Days)
-        const endDate = new Date().toISOString().split('T')[0]; 
+        const endDate = new Date().toISOString().split('T')[0];
         const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const movementsResponse = await axios.get('http://localhost:8080/reports/custom', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { startDate, endDate },
+
+        // Parallel API calls
+        const [
+          inventoryRes,
+          lowStockRes,
+          expiryRes,
+          suggestionsRes,
+          movementsRes
+        ] = await Promise.all([
+          axios.get('http://localhost:8080/inventory', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://localhost:8080/inventory/low-stock', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://localhost:8080/alerts/expiry', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://localhost:8080/inventory/suggestions', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('http://localhost:8080/reports/custom', {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { startDate, endDate }
+          })
+        ]);
+
+        const parsedMovements = Papa.parse(movementsRes.data, {
+          header: true,
+          skipEmptyLines: true
         });
 
-        const parsedData = Papa.parse(movementsResponse.data, {
-          header: true,
-          skipEmptyLines: true,
+        // Update state once with all data
+        setStats({
+          totalItems: inventoryRes.data.length,
+          lowStockItems: lowStockRes.data.length,
+          expiringSoon: expiryRes.data.length
         });
-        setStockMovements(parsedData.data || []);
+
+        setLowStockItems(lowStockRes.data.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          status: 'Low Stock'
+        })));
+
+        setExpiringItems(expiryRes.data.map(item => ({
+          name: item.name,
+          expiry: item.expiryDate,
+          status: 'Expiring'
+        })));
+
+        setSuggestions(suggestionsRes.data);
+        setStockMovements(parsedMovements.data || []);
+
       } catch (err) {
         setError('Failed to load dashboard data');
         toast.error('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
       }
     };
+
     fetchData();
   }, [navigate]);
+
 
   const handleRestock = async (itemName) => {
     try {
@@ -119,7 +191,7 @@ const Dashboard = () => {
       const item = lowStockItems.find((i) => i.name === itemName);
       if (!item.id) throw new Error('Item ID not available');
 
-      const updatedItem = { 
+      const updatedItem = {
         name: item.name,
         quantity: parseInt(item.quantity) + 10,
         threshold: item.threshold || 0,
@@ -226,7 +298,7 @@ const Dashboard = () => {
         acc[itemName] = (acc[itemName] || 0) + Math.abs(parseInt(movement.QuantityChanged));
         return acc;
       }, {});
-      // Sort
+    // Sort
     const topItems = Object.entries(consumedByItem)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
@@ -266,51 +338,79 @@ const Dashboard = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <FiPackage className="w-6 h-6 text-blue-500" />
+          {isLoading ? (
+            <>
+              <Skeleton className="h-24" />
+            </>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <FiPackage className="w-6 h-6 text-blue-500" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.totalItems}</p>
+                  <p className="text-sm text-gray-500 mt-1">Total Items</p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.totalItems}</p>
-                <p className="text-sm text-gray-500 mt-1">Total Items</p>
+
+            </div>
+          )}
+
+
+          {isLoading ? (
+            <>
+              <Skeleton className="h-24" />
+            </>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <FiAlertCircle className="w-6 h-6 text-red-500" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.lowStockItems}</p>
+                  <p className="text-sm text-gray-500 mt-1">Low Stock Items</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          
-
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-red-50 rounded-lg">
-                <FiAlertCircle className="w-6 h-6 text-red-500" />
-              </div>
-              <div className="ml-4">
-                <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.lowStockItems}</p>
-                <p className="text-sm text-gray-500 mt-1">Low Stock Items</p>
+          {isLoading ? (
+            <>
+              <Skeleton className="h-24" />
+            </>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-yellow-50 rounded-lg">
+                  <FiClock className="w-6 h-6 text-yellow-500" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.expiringSoon}</p>
+                  <p className="text-sm text-gray-500 mt-1">Expiring Soon</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-50 rounded-lg">
-                <FiClock className="w-6 h-6 text-yellow-500" />
-              </div>
-              <div className="ml-4">
-                <p className="text-3xl sm:text-4xl font-bold text-gray-800">{stats.expiringSoon}</p>
-                <p className="text-sm text-gray-500 mt-1">Expiring Soon</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
-        
+
+
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 mb-6 sm:mb-8">
+
           {/* Donut Chart */}
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
-    <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Stock Levels</h3>
+          
+          {isLoading ? (
+            <>
+              <Skeleton className="h-80" />
+            </>
+          ) : (
+          < div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
+         
+          
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Stock Levels</h3>
             <div className="h-[250px] sm:h-[300px] min-h-[200px] w-full">
               <Doughnut
                 data={stockLevelsData}
@@ -325,8 +425,14 @@ const Dashboard = () => {
               />
             </div>
           </div>
+          )}
 
           {/* Line Chart */}
+          {isLoading ? (
+            <>
+              <Skeleton className="h-80" />
+            </>
+          ) : (
           <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Stock Movement Trends (Last 30 Days)</h3>
             <div className="h-[250px] sm:h-[300px] min-h-[200px] w-full">
@@ -347,9 +453,15 @@ const Dashboard = () => {
               />
             </div>
           </div>
+              )}
         </div>
 
         {/* Bar Chart */}
+        {isLoading ? (
+            <>
+              <Skeleton className="h-80" />
+            </>
+          ) : (
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
           <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Top 5 Consumed Items (Last 30 Days)</h3>
           <div className="h-[250px] sm:h-[300px] min-h-[200px] w-full">
@@ -363,7 +475,7 @@ const Dashboard = () => {
                   y: { title: { display: true, text: 'Units Consumed' } },
                 },
                 plugins: {
-                  legend: { 
+                  legend: {
                     position: window.innerWidth < 640 ? 'top' : 'bottom',
                     labels: { padding: 10 }
                   },
@@ -373,12 +485,19 @@ const Dashboard = () => {
             />
           </div>
         </div>
+          )}
 
         {/* Low Stock and Expiring Soon Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 mt-5">
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-      <FiAlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mr-2" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 mt-5 my-4">
+        {isLoading ? (
+            <>
+              <Skeleton className="h-24" />
+            </>
+          ) : (
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <FiAlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mr-2" />
               Low Stock Items
             </h3>
             <div className="space-y-3 sm:space-y-4">
@@ -394,19 +513,25 @@ const Dashboard = () => {
                       </p>
                     </div>
                     {user.role === 'ADMIN' && (
-            <button 
-              onClick={() => handleRestock(item.name)}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-500 text-white rounded-md sm:rounded-lg hover:bg-blue-600"
-            >
-              Restock
-            </button>
-          )}
+                      <button
+                        onClick={() => handleRestock(item.name)}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-500 text-white rounded-md sm:rounded-lg hover:bg-blue-600"
+                      >
+                        Restock
+                      </button>
+                    )}
                   </div>
                 ))
               )}
             </div>
           </div>
+          )}
 
+          {isLoading ? (
+            <>
+              <Skeleton className="h-24" />
+            </>
+          ) : (
           <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6">
             <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
               <FiClock className="w-5 h-5 text-yellow-500 mr-2" />
@@ -427,12 +552,19 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+        )}
         </div>
 
         {/* AI Inventory Suggestions */}
+        {isLoading ? (
+            <>
+              <Skeleton className="h-3" />
+            </>
+          ) : (
         <AIInventorySuggestions suggestions={suggestions} />
+          )}
       </div>
-    </Layout>
+    </Layout >
   );
 }
 
